@@ -1,109 +1,159 @@
 from Board import Board
-import tkinter as tk
-from PIL import Image, ImageTk
-
+import pygame
 from Position import Position
+import math
 
-def create_chessboard(root, board):
-  colors = ["green", "beige"]
-  image_size = 80  
-  square_size = 90  
-  offset = (square_size - image_size) // 2
+selected_piece = None
+selected_piece_position = (0, 0)
+is_dragging = False
+
+def run_game():
+    global selected_piece, selected_piece_position, is_dragging, dragging_offset
+    board = Board()
+    board.doInitialPositioning()
+    pygame.init()
+    width, height = 720, 720
+    window = pygame.display.set_mode((width, height))
+    pygame.display.set_caption("Chess Game")
+    dragging_offset = (0, 0)  # Initialize dragging offset
+    # Main game loop
+    running = True
+    update_game_state(window, board)
+    while running:
+      for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+          running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+          is_dragging = True
+          # Handle piece selection
+          selected_piece_info = get_selected_piece(event.pos, board)
+          if selected_piece_info:
+            selected_piece, selected_piece_position = selected_piece_info
+            print(selected_piece_position)
+            
+        elif event.type == pygame.MOUSEMOTION and is_dragging:
+          # Handle piece dragging
+          selected_piece_position = event.pos
+          update_game_state(window, board)  # Update the entire board state
+          draw_dragged_piece(window, selected_piece, selected_piece_position)
+                  
+        elif event.type == pygame.MOUSEBUTTONUP:
+          print("piece was dropped")
+          # Handle piece dropping
+          is_dragging = False
+          snap_piece_to_board(window, selected_piece, selected_piece_position, board)
+
+        pygame.display.update()
+    # Quit Pygame
+    pygame.quit()
+
+
+
+def update_game_state(window, board):
+  WHITE = (255, 255, 255)
+  window.fill(WHITE)
+  draw_board(window)
+  draw_pieces(window, board)
+  
+def draw_board(window):
+  LIGHT = (238, 238, 210)
+  DARK = (118, 150, 86)
+  tile_size = 720 // 8
+  
   for row in range(8):
     for col in range(8):
-      color = colors[(row + col) % 2]
-      frame = tk.Frame(root, width=90, height=90, bg=color)
-      frame.grid(row=row, column=col)
-      frame.grid_propagate(False)
-      frame.columnconfigure(0, weight=1)
-      frame.rowconfigure(0, weight=1)
+      color = LIGHT if (row + col) % 2 == 0 else DARK
+      pygame.draw.rect(window, color, (col * tile_size, row * tile_size, tile_size, tile_size))
 
-      cell = board.getCell(Position(row, col))
-      piece = cell.getPiece()
-      if piece is not None:
-        image_path = piece.getName()  # Path to the image
-        with Image.open(image_path) as img:
-          img = img.convert("RGBA")
-          img = img.resize((80, 80), Image.LANCZOS)
-          tk_image = ImageTk.PhotoImage(img)
-        
-          label = tk.Label(root, image=tk_image)  # Placed directly on root
-          label.image = tk_image  # Keep a reference
-          label.place(x=col * square_size + offset, y=row * square_size + offset)  # Place on the root window
-                    
-          label.bind("<Button-1>", lambda event: start_drag(event))
-          label.bind("<B1-Motion>", lambda event: do_drag(event))
-          label.bind("<ButtonRelease-1>", lambda event, board=board, piece=piece: drop(event, board, piece))
-          
-          
+def draw_pieces(window, board):
+  board_str = str(board)
+  lines = board_str.strip().split("\n") # lines of the __str__ board method 
+  tile_size = 720 // 8
+  for row_index, row in enumerate(lines):
+    if row_index % 2 == 0:  # Process only the lines of text that are rows of the board
+      pieces = row.split(" | ")
+      for col_index, piece_path in enumerate(pieces):
+        if piece_path != "Empty":
+        # Load and scale the piece image
+          piece_image = pygame.image.load(piece_path)
+          piece_image = pygame.transform.scale(piece_image, (tile_size, tile_size))
+          # Draw the piece
+          window.blit(piece_image, (col_index * tile_size, (row_index // 2) * tile_size))
 
+def get_selected_piece(mouse_position, board):
+  tile_size = 720 // 8
+  col = mouse_position[0] // tile_size
+  row = mouse_position[1] // tile_size
 
-        
-def square_clicked(event, row, col):
-  print(f"Square clicked at Row: {row}, Col: {col}")
+  # Check if there's a piece at the clicked position
+  cell = board.getCell(Position(row, col))
+  piece = cell.getPiece() if cell else None
+
+  if piece:
+    
+    x_center = (int)((col * tile_size) + tile_size / 2)
+    y_center = (int)((row * tile_size) + tile_size / 2)
+    dragging_offset = (x_center, y_center)
+  else:
+    print("NO PIECE")
+    dragging_offset = (0, 0)
   
-def start_drag(event):
-    # Remember the initial position of the piece
-    widget = event.widget
-    widget.lift()
-    widget._drag_start_x = event.x_root
-    widget._drag_start_y = event.y_root
-    widget._start_x = widget.winfo_x()
-    widget._start_y = widget.winfo_y()
-    print(f'Start X: {widget._drag_start_x}, Start Y: {widget._drag_start_y}')
+  return piece, dragging_offset
 
-
-
-def do_drag(event):
-    # Calculate the distance moved and move the piece
-    widget = event.widget
-    dx = event.x_root - widget._drag_start_x
-    dy = event.y_root - widget._drag_start_y
-    
-    #Checking if the piece does not go outofbounds
-    new_x = max(0, min(widget._start_x + dx, 90 * 7))
-    new_y = max(0, min(widget._start_y + dy, 90 * 7))
-    
-    widget.place_configure(x=new_x, y=new_y)
-
-
-def drop(event, board, piece):
-    widget = event.widget
-    # Calculate the center of the piece
-    piece_center_x = widget.winfo_x() + widget.winfo_width() // 2
-    piece_center_y = widget.winfo_y() + widget.winfo_height() // 2
-    # Determine which square the center of the piece is over
-    col = piece_center_x // 90
-    row = piece_center_y // 90
-    # Offset to center the piece in the square
-    offset = (90 - widget.winfo_width()) // 2
-    # Snap the piece to the center of the identified square
+def snap_piece_to_board(window, piece, position, board):
+  if piece:
+    tile_size = 720 // 8
+    col = position[0] // tile_size
+    row = position[1] // tile_size
     next_position = Position(row, col)
-    if(piece.checkMove(board, next_position)):
-      #widget.place(x=col * 90 + offset, y=row * 90 + offset)
+    if piece.checkMove(board, next_position):
+    # Clear the old square
+    #clear_square(window, piece.getPosition().getRow(), piece.getPosition().getCol())
       piece.move(board, next_position)
-      redraw_board(event.widget.master, board)
-      print(board)
+
+    """
     else:
+    # Snap the piece back to its original position if the move is invalid
       col = piece.getPosition().getCol()
       row = piece.getPosition().getRow()
-      widget.place(x=col * 90 + offset, y=row * 90 + offset)
+      x = col * tile_size
+      y = row * tile_size + (720 // 16)  
+      selected_piece_position = (x, y)
+    """
+    update_game_state(window, board)  # Redraw the board
+       
+def draw_dragged_piece(window, piece, position):
+    if piece:
+      tile_size = 720 // 8
+      # Clear the original position
+      clear_square(window, piece.getPosition().getRow(), piece.getPosition().getCol())
 
-def redraw_board(root, board):
-    # Clear all existing piece images first
-    for label in root.grid_slaves():
-      if isinstance(label, tk.Label):
-        label.grid_forget()
+      # Draw the piece at new position
+      x = position[0] - tile_size // 2
+      y = position[1] - tile_size // 2
+      piece_image_path = piece.getName()
+      piece_image = pygame.image.load(piece_image_path)
+      piece_image = pygame.transform.scale(piece_image, (tile_size, tile_size))
+      window.blit(piece_image, (x, y))
+      pygame.display.update()
 
-    # Redraw the board based on the current state of the board object
-    create_chessboard(root, board)     
+def clear_square(window, row, col):
+  tile_size = 720 // 8
+  LIGHT = (238, 238, 210)
+  DARK = (118, 150, 86)
+  color = LIGHT if (row + col) % 2 == 0 else DARK
+  pygame.draw.rect(window, color, (col * tile_size, row * tile_size, tile_size, tile_size))
+  pygame.display.update()
+  
+def is_in_bounds(position):
+  return 0 <= position[0] <= 720 and 0 <= position[1] <= 720
+
 
 def main():
-    board = Board()
-    root = tk.Tk()
-    root.title("Chess Game")
-    create_chessboard(root, board)
-    root.mainloop()
-
+  run_game()
+  
 if __name__ == "__main__":
-    main()
+  main()
+  
+
+

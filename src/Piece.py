@@ -27,10 +27,8 @@ class Piece:
       
   def checkMove(self, board, next_position):
     if (board.getCell(next_position).getPiece() == None):
-      print('None')
       return True
     elif (board.getCell(next_position).getPiece().isWhite != self.isWhite):
-      print('dif color')
       return True
     return False
       
