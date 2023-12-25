@@ -110,16 +110,7 @@ def snap_piece_to_board(window, piece, position, board):
     # Clear the old square
     #clear_square(window, piece.getPosition().getRow(), piece.getPosition().getCol())
       piece.move(board, next_position)
-
-    """
-    else:
-    # Snap the piece back to its original position if the move is invalid
-      col = piece.getPosition().getCol()
-      row = piece.getPosition().getRow()
-      x = col * tile_size
-      y = row * tile_size + (720 // 16)  
-      selected_piece_position = (x, y)
-    """
+      print(board)
     update_game_state(window, board)  # Redraw the board
        
 def draw_dragged_piece(window, piece, position):
