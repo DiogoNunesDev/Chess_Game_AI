@@ -45,18 +45,17 @@ class Rook(Piece):
             
       return True
     
-  def getPossibleMoves(self, board):
-    possible_moves = []
+  def getMoves(self, board):
+    moves = []
     next_position = None
     for row in range(8):
       for col in range(8):
         next_position = Position(row, col)
         if(self.checkMove(board, next_position)):
-          possible_moves.append(next_position)
+          moves.append(next_position)
         elif self.checkCastle(board, next_position):
-          possible_moves.append(next_position)
-    
-    return possible_moves
+          moves.append(next_position)
+    return moves
   
   def checkCastle(self, board, next_position):
     if not self.hasMoved:
@@ -70,3 +69,13 @@ class Rook(Piece):
           if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
             board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
             return True
+          
+  def getPossibleMoves(self, board):
+    possible_moves = []
+    moves = self.getMoves(board)
+    for next_position in moves:
+      tempBoard = board.simulateMove(self, next_position)
+      if (not tempBoard.isKingInCheck(self.isWhite)):
+        possible_moves.append(next_position)
+        
+    return possible_moves

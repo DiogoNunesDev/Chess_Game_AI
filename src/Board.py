@@ -122,7 +122,7 @@ class Board:
   def isSquareUnderAttack(self, cell, isWhiteAttacking):
     pieces = self.getWhitePieces() if isWhiteAttacking else self.getBlackPieces()
     for piece in pieces:
-      if cell.getPosition() in piece.getPossibleMoves(self):
+      if cell.getPosition() in piece.getMoves(self):
         return True
     return False
   
@@ -159,7 +159,6 @@ class Board:
       if self.checkCastleUnderAttack(piece, row, col):
         rook = self.getCell(Position(row,col)).getPiece()
         if rook is not None and isinstance(rook, Rook) and not rook.getHasMoved():
-          #if piece.checkCastle(self, next_position):
           self.castleMove(row, col, piece, rook)
     
     elif piece is not None and isinstance(piece, Rook) and not piece.hasMoved:  #If piece is a Rook
@@ -168,7 +167,6 @@ class Board:
       if self.checkCastleUnderAttack(piece, row, piece.getPosition().getCol()):
         king = self.getCell(Position(row, col)).getPiece()
         if king is not None and isinstance(king, King) and not king.getHasMoved():
-          #if piece.checkCastle(self, next_position):
           self.castleMove(row, col, piece, rook)
   
   def castleMove(self, row, col, king, rook):

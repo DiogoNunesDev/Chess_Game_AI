@@ -36,12 +36,12 @@ class Pawn(Piece):
             return True
           
         else:
-          if((board.getCell(next_position).getPiece().isWhite==False) and 
+          if((board.getCell(next_position).getPiece().isWhite != self.isWhite) and 
               (next_position.getRow()==(self.position.getRow()-1)) and 
-              (next_position.getCol()==(self.position.getCol()+1 or self.position.getCol()-1))):
-            #Plays for eating black pieces
+              ((abs(next_position.getCol() - self.position.getCol())) == 1)):
+            
             return True
-
+          
       else:
         #BLACK POSSIBLE MOVES
         if(board.getCell(next_position).getPiece() is None):
@@ -55,10 +55,9 @@ class Pawn(Piece):
             return True
           
         else:
-          if((board.getCell(next_position).getPiece().isWhite==True) and 
+          if((board.getCell(next_position).getPiece().isWhite != self.isWhite) and 
               (next_position.getRow()==(self.position.getRow()+1)) and 
-              (next_position.getCol()==(self.position.getCol()+1 or self.position.getCol()-1))):
-            #Plays for eating white pieces
+              ((abs(next_position.getCol() - self.position.getCol())) == 1)):
             return True
           
     return False
@@ -71,16 +70,25 @@ class Pawn(Piece):
       if cell.getPiece() is not None and isinstance(cell.getPiece(), Pawn) and cell.getPiece().getEn_Passant() == board.getTurn_counter() - 1:
         return True
     return False
-   
-  def getPossibleMoves(self, board):
-    possible_moves = []
+     
+  def getMoves(self, board):
+    moves = []
     next_position = None
     for row in range(8):
       for col in range(8):
         next_position = Position(row, col)
         if(self.checkMove(board, next_position)):
-          possible_moves.append(next_position)
+          moves.append(next_position)
         elif self.checkEn_Passant(board, next_position):
-          possible_moves.append(next_position)
-    
+          moves.append(next_position)
+    return moves
+  
+  def getPossibleMoves(self, board):
+    possible_moves = []
+    moves = self.getMoves(board)
+    for next_position in moves:
+      tempBoard = board.simulateMove(self, next_position)
+      if (not tempBoard.isKingInCheck(self.isWhite)):
+        possible_moves.append(next_position)
+        
     return possible_moves

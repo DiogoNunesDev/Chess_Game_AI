@@ -30,20 +30,17 @@ class King(Piece):
       if abs(row_diff) <= 1 and abs(col_diff) <= 1:
         return True
 
-      
-
-  def getPossibleMoves(self, board):
-    possible_moves = []
+  def getMoves(self, board):
+    moves = []
     next_position = None
     for row in range(8):
       for col in range(8):
         next_position = Position(row, col)
         if(self.checkMove(board, next_position)):
-          possible_moves.append(next_position)
+          moves.append(next_position)
         elif self.checkCastle(board, next_position):
-          possible_moves.append(next_position)
-    
-    return possible_moves
+          moves.append(next_position)
+    return moves
   
   def checkCastle(self, board, next_position):
     if next_position.getRow()==self.position.getRow():
@@ -58,16 +55,12 @@ class King(Piece):
           board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
           return True
         
+  def getPossibleMoves(self, board):
+    possible_moves = []
+    moves = self.getMoves(board)
+    for next_position in moves:
+      tempBoard = board.simulateMove(self, next_position)
+      if (not tempBoard.isKingInCheck(self.isWhite)):
+        possible_moves.append(next_position)
         
-        """
-        if (not (board.isSquareUnderAttack(board.getCell(Position(self.position.getRow(), 1)), self.isWhite)) and 
-          (not board.isSquareUnderAttack(board.getCell(Position(self.position.getRow(), 2)), self.isWhite)) and 
-          (not board.isSquareUnderAttack(board.getCell(Position(self.position.getRow(), 3)), self.isWhite)) and 
-          (not board.isSquareUnderAttack(board.getCell(self.position), self.isWhite))):
-          return True
-        
-        if (not (board.isSquareUnderAttack(board.getCell(Position(self.position.getRow(), 5)), self.isWhite)) and 
-          (not board.isSquareUnderAttack(board.getCell(Position(self.position.getRow(), 6)), self.isWhite)) and
-          (not board.isSquareUnderAttack(board.getCell(self.position), self.isWhite))):
-          return True
-        """
+    return possible_moves
