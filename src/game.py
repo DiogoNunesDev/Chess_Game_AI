@@ -125,16 +125,17 @@ def snap_piece_to_board(window, piece, position, board):
     if is_valid_turn(piece, board):
       possible_moves = piece.getPossibleMoves(board)
       if next_position in possible_moves:
-        if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(board, next_position)):
-          board.castle(piece, next_position)
-        elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
-          print("En passant")
-          board.En_Passant(piece, next_position)
-        else:
-          piece.move(board, next_position)
-        
-        board.increment_turn()
-    update_game_state(window, board)  # Redraw the board
+          tempBoard = board.simulateMove(piece, next_position)
+          if (not tempBoard.isKingInCheck(piece.isWhite)):
+            if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(board, next_position)):
+              board.castle(piece, next_position)
+            elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
+              board.En_Passant(piece, next_position)
+            else:
+              piece.move(board, next_position)
+            
+            board.increment_turn()
+  update_game_state(window, board)  # Redraw the board
        
 def draw_dragged_piece(window, piece, position):
     if piece:

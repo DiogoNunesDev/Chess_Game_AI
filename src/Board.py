@@ -1,3 +1,4 @@
+import copy
 from Cell import Cell
 from Position import Position
 from Bishop import Bishop
@@ -107,12 +108,35 @@ class Board:
           
     return whitePieces
   
+  def getKingPosition(self, isWhite):
+    kingPosition = None
+    for row in range(8):
+      for col in range(8):
+        position = Position(row, col)
+        piece = self.getCell(position).getPiece()
+        if piece is not None and piece.getIsWhite()==isWhite and isinstance(piece, King):
+          kingPosition = position
+    
+    return kingPosition
+  
   def isSquareUnderAttack(self, cell, isWhiteAttacking):
     pieces = self.getWhitePieces() if isWhiteAttacking else self.getBlackPieces()
     for piece in pieces:
       if cell.getPosition() in piece.getPossibleMoves(self):
         return True
     return False
+  
+  def isKingInCheck(self, isWhite):
+    kingPosition = self.getKingPosition(isWhite)
+    kingCell = self.getCell(kingPosition)
+    opponentColor = not isWhite
+    return self.isSquareUnderAttack(kingCell, opponentColor)
+  
+  def simulateMove(self, piece, newPosition):
+    tempBoard = copy.deepcopy(self)
+    tempPiece = tempBoard.getCell(piece.getPosition()).getPiece()
+    tempPiece.move(tempBoard, newPosition)  
+    return tempBoard
   
   def checkCastleUnderAttack(self, piece, row, col):
     if col==0:

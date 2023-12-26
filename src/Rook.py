@@ -54,7 +54,7 @@ class Rook(Piece):
         if(self.checkMove(board, next_position)):
           possible_moves.append(next_position)
         elif self.checkCastle(board, next_position):
-          possible_moves.append()
+          possible_moves.append(next_position)
     
     return possible_moves
   
