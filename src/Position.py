@@ -13,4 +13,7 @@ class Position:
   def __str__(self):
     return f'Row: {self.row}, Col: {self.col}'
   
+  def __eq__(self, other):
+    return self.row == other.row and self.col == other.col
+  
   

@@ -1,4 +1,5 @@
 from Piece import Piece
+from Position import Position
 
 class Knight(Piece):
   
@@ -14,25 +15,25 @@ class Knight(Piece):
   
   def checkMove(self, board, next_position):
     if(super().checkMove(board, next_position)):
-      if(board.getCell(next_position).getPiece() is None):
-          if((next_position.getRow()==self.getPosition().getRow()-2 and next_position.getCol()==self.getPosition().getCol()-1) or
-             (next_position.getRow()==self.getPosition().getRow()-2 and next_position.getCol()==self.getPosition().getCol()+1) or
-              (next_position.getRow()==self.getPosition().getRow()+2 and next_position.getCol()==self.getPosition().getCol()-1) or 
-              (next_position.getRow()==self.getPosition().getRow()+2 and next_position.getCol()==self.getPosition().getCol()+1) or 
-              (next_position.getRow()==self.getPosition().getRow()-1 and next_position.getCol()==self.getPosition().getCol()-2) or 
-              (next_position.getRow()==self.getPosition().getRow()+1 and next_position.getCol()==self.getPosition().getCol()-2) or 
-              (next_position.getRow()==self.getPosition().getRow()-1 and next_position.getCol()==self.getPosition().getCol()+2) or 
-              (next_position.getRow()==self.getPosition().getRow()+1 and next_position.getCol()==self.getPosition().getCol()+2)):
-              return True
-      else:
-        if(not board.getCell(next_position).getPiece().isWhite):
-          if((next_position.getRow()==self.getPosition().getRow()-2 and next_position.getCol()==self.getPosition().getCol()-1) or
-            (next_position.getRow()==self.getPosition().getRow()-2 and next_position.getCol()==self.getPosition().getCol()+1) or
-            (next_position.getRow()==self.getPosition().getRow()+2 and next_position.getCol()==self.getPosition().getCol()-1) or 
-            (next_position.getRow()==self.getPosition().getRow()+2 and next_position.getCol()==self.getPosition().getCol()+1) or 
-            (next_position.getRow()==self.getPosition().getRow()-1 and next_position.getCol()==self.getPosition().getCol()-2) or 
-            (next_position.getRow()==self.getPosition().getRow()+1 and next_position.getCol()==self.getPosition().getCol()-2) or 
-            (next_position.getRow()==self.getPosition().getRow()-1 and next_position.getCol()==self.getPosition().getCol()+2) or 
-            (next_position.getRow()==self.getPosition().getRow()+1 and next_position.getCol()==self.getPosition().getCol()+2)):
-            return True
       
+      row_diff = abs(self.position.getRow() - next_position.getRow())
+      col_diff = abs(self.position.getCol() - next_position.getCol())
+
+      # if its a L-shaped move
+      if (row_diff, col_diff) in [(2, 1), (1, 2)]:
+        target_cell = board.getCell(next_position)
+        if target_cell.getPiece() is None or target_cell.getPiece().isWhite != self.isWhite:
+          return True
+
+        return False
+
+  def getPossibleMoves(self, board):
+    possible_moves = []
+    next_position = None
+    for row in range(8):
+      for col in range(8):
+        next_position = Position(row, col)
+        if(self.checkMove(board, next_position)):
+          possible_moves.append(next_position)
+    
+    return possible_moves

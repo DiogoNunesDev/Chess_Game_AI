@@ -1,14 +1,19 @@
 from Board import Board
 import pygame
+from King import King
+from Pawn import Pawn
 from Position import Position
 import math
+
+from Rook import Rook
 
 selected_piece = None
 selected_piece_position = (0, 0)
 is_dragging = False
+possible_moves = []
 
 def run_game():
-    global selected_piece, selected_piece_position, is_dragging, dragging_offset
+    global selected_piece, selected_piece_position, is_dragging, dragging_offset, possible_moves
     board = Board()
     board.doInitialPositioning()
     pygame.init()
@@ -24,21 +29,24 @@ def run_game():
         if event.type == pygame.QUIT:
           running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
+          print(board.getTurn_counter())
           is_dragging = True
           # Handle piece selection
           selected_piece_info = get_selected_piece(event.pos, board)
           if selected_piece_info:
             selected_piece, selected_piece_position = selected_piece_info
-            print(selected_piece_position)
+            if selected_piece is not None:
+              possible_moves = selected_piece.getPossibleMoves(board)
+              draw_possible_moves(window, possible_moves)
             
         elif event.type == pygame.MOUSEMOTION and is_dragging:
           # Handle piece dragging
           selected_piece_position = event.pos
           update_game_state(window, board)  # Update the entire board state
+          draw_possible_moves(window, possible_moves)
           draw_dragged_piece(window, selected_piece, selected_piece_position)
                   
         elif event.type == pygame.MOUSEBUTTONUP:
-          print("piece was dropped")
           # Handle piece dropping
           is_dragging = False
           snap_piece_to_board(window, selected_piece, selected_piece_position, board)
@@ -46,7 +54,6 @@ def run_game():
         pygame.display.update()
     # Quit Pygame
     pygame.quit()
-
 
 
 def update_game_state(window, board):
@@ -95,10 +102,19 @@ def get_selected_piece(mouse_position, board):
     y_center = (int)((row * tile_size) + tile_size / 2)
     dragging_offset = (x_center, y_center)
   else:
-    print("NO PIECE")
     dragging_offset = (0, 0)
   
   return piece, dragging_offset
+
+def draw_possible_moves(window, possible_moves):
+  square_size = 720 // 8
+  for pos in possible_moves:
+    # Calculate the center of the square
+    x_center = pos.getCol() * square_size + square_size // 2
+    y_center = pos.getRow() * square_size + square_size // 2
+
+    # Draw a small circle at the center
+    pygame.draw.circle(window, (200, 200, 200), (x_center, y_center), 10)  
 
 def snap_piece_to_board(window, piece, position, board):
   if piece:
@@ -106,11 +122,18 @@ def snap_piece_to_board(window, piece, position, board):
     col = position[0] // tile_size
     row = position[1] // tile_size
     next_position = Position(row, col)
-    if piece.checkMove(board, next_position):
-    # Clear the old square
-    #clear_square(window, piece.getPosition().getRow(), piece.getPosition().getCol())
-      piece.move(board, next_position)
-      print(board)
+    if is_valid_turn(piece, board):
+      possible_moves = piece.getPossibleMoves(board)
+      if next_position in possible_moves:
+        if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(board, next_position)):
+          board.castle(piece, next_position)
+        elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
+          print("En passant")
+          board.En_Passant(piece, next_position)
+        else:
+          piece.move(board, next_position)
+        
+        board.increment_turn()
     update_game_state(window, board)  # Redraw the board
        
 def draw_dragged_piece(window, piece, position):
@@ -139,6 +162,9 @@ def clear_square(window, row, col):
 def is_in_bounds(position):
   return 0 <= position[0] <= 720 and 0 <= position[1] <= 720
 
+def is_valid_turn(piece, board):
+    is_odd_turn = board.turn_counter % 2 != 0
+    return (is_odd_turn and piece.isWhite) or (not is_odd_turn and not piece.isWhite)
 
 def main():
   run_game()

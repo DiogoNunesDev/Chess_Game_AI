@@ -6,6 +6,7 @@ from Knight import Knight
 from Pawn import Pawn
 from Queen import Queen
 from Rook import Rook
+from Piece import Piece
 
 
 class Board:
@@ -16,9 +17,16 @@ class Board:
       for j in range(8):
         position = Position(i, j)
         self.cells[i][j] = Cell(position, None)
-    
+        
+    self.turn_counter = 1
     self.doInitialPositioning()
     
+  def getTurn_counter(self):
+    return self.turn_counter
+  
+  def increment_turn(self):
+    self.turn_counter += 1  
+  
   def getCell(self, position):
     return self.cells[position.getRow()][position.getCol()]     
   
@@ -69,13 +77,91 @@ class Board:
             bishop = Bishop(position=Position(row, col), isWhite=True)
             self.cells[row][col].setPiece(bishop)
             
-          elif(col == 3):
+          elif(col == 4):
             king = King(position=Position(row, col), isWhite=True)
             self.cells[row][col].setPiece(king)
             
-          elif(col == 4):
+          elif(col == 3):
             queen = Queen(position=Position(row, col), isWhite=True)
             self.cells[row][col].setPiece(queen)
+    
+  def getBlackPieces(self):
+    blackPieces = []
+    for row in range(8):
+      for col in range(8):
+        position = Position(row, col)
+        piece = self.getCell(position).getPiece()
+        if piece is not None and not piece.getIsWhite():
+          blackPieces.append(piece)
+          
+    return blackPieces
+  
+  def getWhitePieces(self):
+    whitePieces = []
+    for row in range(8):
+      for col in range(8):
+        position = Position(row, col)
+        piece = self.getCell(position).getPiece()
+        if piece is not None and piece.getIsWhite():
+          whitePieces.append(piece)
+          
+    return whitePieces
+  
+  def isSquareUnderAttack(self, cell, isWhiteAttacking):
+    pieces = self.getWhitePieces() if isWhiteAttacking else self.getBlackPieces()
+    for piece in pieces:
+      if cell.getPosition() in piece.getPossibleMoves(self):
+        return True
+    return False
+  
+  def checkCastleUnderAttack(self, piece, row, col):
+    if col==0:
+      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 1)), piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 2)), piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 3)), piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 4)), self.isWhite))):
+          return True
+    elif col==7:
+      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 4)), piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 5)), piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 6)), piece.isWhite))):
+          return True
+    return False
+  
+  def castle(self, piece, next_position):
+    if piece is not None and isinstance(piece, King) and not piece.hasMoved: #If piece is a King
+      row = 7 if piece.isWhite else 0
+      col = 7 if (next_position.getCol() > piece.getPosition().getCol()) else 0 
+      if self.checkCastleUnderAttack(piece, row, col):
+        rook = self.getCell(Position(row,col)).getPiece()
+        if rook is not None and isinstance(rook, Rook) and not rook.getHasMoved():
+          #if piece.checkCastle(self, next_position):
+          self.castleMove(row, col, piece, rook)
+    
+    elif piece is not None and isinstance(piece, Rook) and not piece.hasMoved:  #If piece is a Rook
+      row = 7 if piece.isWhite else 0
+      col = 4
+      if self.checkCastleUnderAttack(piece, row, piece.getPosition().getCol()):
+        king = self.getCell(Position(row, col)).getPiece()
+        if king is not None and isinstance(king, King) and not king.getHasMoved():
+          #if piece.checkCastle(self, next_position):
+          self.castleMove(row, col, piece, rook)
+  
+  def castleMove(self, row, col, king, rook):
+    king_col = 2 if col == 0 else 6
+    rook_col = 3 if col == 0 else 5
+    self.getCell(king.getPosition()).setPiece(None)
+    self.getCell(rook.getPosition()).setPiece(None)
+    king.setPosition(Position(row, king_col))  
+    rook.setPosition(Position(row, rook_col))
+    self.getCell(king.getPosition()).setPiece(king)
+    self.getCell(rook.getPosition()).setPiece(rook)
+            
+  def En_Passant(self, piece, next_position):
+    direction = 1 if piece.getIsWhite() else -1
+    self.getCell(piece.getPosition()).setPiece(None)
+    self.getCell(next_position).setPiece(piece)
+    self.getCell(Position(next_position.getRow()+direction, next_position.getCol())).setPiece(None)
     
   def __str__(self):
     board_str = ""

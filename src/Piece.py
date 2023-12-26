@@ -16,14 +16,16 @@ class Piece:
   def getName(self):
     return self.name
   
+  def getIsWhite(self):
+    return self.isWhite
+  
   def __str__(self):
     return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}],  isWhite: {self.isWhite}'
   
   def move(self, board, next_position):
-    if self.checkMove(board, next_position):
-      board.getCell(self.position).setPiece(None)
-      board.getCell(next_position).setPiece(self)
-      self.setPosition(next_position)
+    board.getCell(self.position).setPiece(None)
+    board.getCell(next_position).setPiece(self)
+    self.setPosition(next_position)
       
   def checkMove(self, board, next_position):
     if (board.getCell(next_position).getPiece() == None):
@@ -32,7 +34,7 @@ class Piece:
       return True
     return False
       
-
-
+  def getPossibleMoves(self, board):
+    pass
   
   
