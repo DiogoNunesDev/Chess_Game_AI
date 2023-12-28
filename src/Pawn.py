@@ -26,7 +26,7 @@ class Pawn(Piece):
         #WHITE POSSIBLE MOVES
         #No targeting piece moves
         if(board.getCell(next_position).getPiece() is None):
-          if(self.position.getRow()==6 and next_position.getRow()==4 and next_position.getCol()==self.position.getCol()):
+          if(self.position.getRow()==6 and next_position.getRow()==4 and next_position.getCol()==self.position.getCol() and board.getCell(Position(5, self.position.getCol())).getPiece() is None):
             self.en_passant = board.getTurn_counter()
             #Possible initial play of advancing 2 squares 
             return True
@@ -45,7 +45,7 @@ class Pawn(Piece):
       else:
         #BLACK POSSIBLE MOVES
         if(board.getCell(next_position).getPiece() is None):
-          if(self.position.getRow()==1 and next_position.getRow()==3 and next_position.getCol()==self.position.getCol()):
+          if(self.position.getRow()==1 and next_position.getRow()==3 and next_position.getCol()==self.position.getCol()  and board.getCell(Position(2, self.position.getCol())).getPiece() is None):
             self.en_passant = board.getTurn_counter()
             #Possible initial play of advancing 2 squares 
             return True

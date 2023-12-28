@@ -5,15 +5,16 @@ from King import King
 from Pawn import Pawn
 from Rook import Rook
 from Position import Position
-
+from model import make_random_move
 
 selected_piece = None
 selected_piece_position = (0, 0)
 is_dragging = False
 possible_moves = []
+player_color = None
 
 def run_game():
-    global selected_piece, selected_piece_position, is_dragging, dragging_offset, possible_moves
+    global selected_piece, selected_piece_position, is_dragging, dragging_offset, possible_moves, player_color
     board = Board()
     board.doInitialPositioning()
     pygame.init()
@@ -24,8 +25,14 @@ def run_game():
     # Main game loop
     running = True
     update_game_state(window, board)
+    #player_color = input("Choose color: ")
+    #PlayerIsWhite = True if (int)(player_color) == 1 else False # true for white , false for black
+    PlayerIsWhite = True
     while running:
       for event in pygame.event.get():
+        if (board.getTurn_counter() % 2 == 0 and PlayerIsWhite) or (board.getTurn_counter() % 2 != 0 and not PlayerIsWhite):
+          make_random_move(board, PlayerIsWhite)
+          update_game_state(window, board)
         if event.type == pygame.QUIT:
           running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -35,25 +42,29 @@ def run_game():
           if selected_piece_info:
             selected_piece, selected_piece_position = selected_piece_info
             if selected_piece is not None:
-              possible_moves = selected_piece.getPossibleMoves(board)
-              draw_possible_moves(window, possible_moves, board)
+              if PlayerIsWhite == selected_piece.getIsWhite():
+                possible_moves = selected_piece.getPossibleMoves(board)
+                draw_possible_moves(window, possible_moves, board)
             
         elif event.type == pygame.MOUSEMOTION and is_dragging:
           # Handle piece dragging
-          selected_piece_position = event.pos
-          update_game_state(window, board)  # Update the entire board state
-          draw_possible_moves(window, possible_moves, board)
-          draw_dragged_piece(window, selected_piece, selected_piece_position, board)
+          if PlayerIsWhite == selected_piece.getIsWhite():
+            selected_piece_position = event.pos
+            update_game_state(window, board)  # Update the entire board state
+            draw_possible_moves(window, possible_moves, board)
+            draw_dragged_piece(window, selected_piece, selected_piece_position, board)
                   
         elif event.type == pygame.MOUSEBUTTONUP:
           # Handle piece dropping
           is_dragging = False
           snap_piece_to_board(window, selected_piece, selected_piece_position, board)
 
+        
         pygame.display.update()
+
+      
     # Quit Pygame
     pygame.quit()
-
 
 def update_game_state(window, board):
   WHITE = (255, 255, 255)
@@ -194,6 +205,14 @@ def is_in_bounds(position):
 def is_valid_turn(piece, board):
     is_odd_turn = board.turn_counter % 2 != 0
     return (is_odd_turn and piece.isWhite) or (not is_odd_turn and not piece.isWhite)
+
+
+
+
+
+
+
+
 
 def main():
   run_game()

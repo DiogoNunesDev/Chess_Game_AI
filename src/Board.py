@@ -114,7 +114,7 @@ class Board:
       for col in range(8):
         position = Position(row, col)
         piece = self.getCell(position).getPiece()
-        if piece is not None and piece.getIsWhite()==isWhite and isinstance(piece, King):
+        if piece is not None and piece.isWhite==isWhite and isinstance(piece, King):
           kingPosition = position
     
     return kingPosition
@@ -128,9 +128,11 @@ class Board:
   
   def isKingInCheck(self, isWhite):
     kingPosition = self.getKingPosition(isWhite)
-    kingCell = self.getCell(kingPosition)
-    opponentColor = not isWhite
-    return self.isSquareUnderAttack(kingCell, opponentColor)
+    if kingPosition is not None:
+      kingCell = self.getCell(kingPosition)
+      opponentColor = not isWhite
+      return self.isSquareUnderAttack(kingCell, opponentColor)
+    
   
   def simulateMove(self, piece, newPosition):
     tempBoard = copy.deepcopy(self)
@@ -140,15 +142,15 @@ class Board:
   
   def checkCastleUnderAttack(self, piece, row, col):
     if col==0:
-      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 1)), piece.isWhite)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 2)), piece.isWhite)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 3)), piece.isWhite)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 4)), self.isWhite))):
+      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 1)), not piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 2)), not piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 3)), not piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 4)), not piece.isWhite))):
           return True
     elif col==7:
-      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 4)), piece.isWhite)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 5)), piece.isWhite)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 6)), piece.isWhite))):
+      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 4)), not piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 5)), not piece.isWhite)) and 
+          (not self.isSquareUnderAttack(self.getCell(Position(row, 6)), not piece.isWhite))):
           return True
     return False
   
@@ -167,7 +169,7 @@ class Board:
       if self.checkCastleUnderAttack(piece, row, piece.getPosition().getCol()):
         king = self.getCell(Position(row, col)).getPiece()
         if king is not None and isinstance(king, King) and not king.getHasMoved():
-          self.castleMove(row, col, piece, rook)
+          self.castleMove(row, col, king, piece)
   
   def castleMove(self, row, col, king, rook):
     king_col = 2 if col == 0 else 6
@@ -178,6 +180,8 @@ class Board:
     rook.setPosition(Position(row, rook_col))
     self.getCell(king.getPosition()).setPiece(king)
     self.getCell(rook.getPosition()).setPiece(rook)
+    king.setHasMoved(True)
+    rook.setHasMoved(True)
             
   def En_Passant(self, piece, next_position):
     direction = 1 if piece.getIsWhite() else -1

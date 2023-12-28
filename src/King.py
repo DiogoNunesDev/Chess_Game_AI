@@ -1,6 +1,5 @@
 from Piece import Piece
 from Position import Position
-from Rook import Rook
 
 class King(Piece):
   
@@ -54,6 +53,8 @@ class King(Piece):
         if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
           board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
           return True
+    
+    return False
         
   def getPossibleMoves(self, board):
     possible_moves = []

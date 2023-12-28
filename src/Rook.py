@@ -1,3 +1,4 @@
+from King import King
 from Piece import Piece
 from Position import Position
 
@@ -60,15 +61,26 @@ class Rook(Piece):
   def checkCastle(self, board, next_position):
     if not self.hasMoved:
       if next_position.getRow()==self.position.getRow():
-        if next_position.getCol() in {2, 3, 4}:
+        if next_position.getCol() in {2, 3}:
           if (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
             board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
             board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
             return True
-        elif next_position.getCol() in {4, 5}:
+        elif next_position.getCol()==5:
           if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
             board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
             return True
+        
+        elif next_position.getCol()==4:
+          if self.position.getCol()==7 and (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
+            board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
+            return True
+          
+          elif (self.position.getCol()==0 and board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
+            board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
+            board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
+            return True
+          
           
   def getPossibleMoves(self, board):
     possible_moves = []
