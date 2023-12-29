@@ -29,10 +29,11 @@ def run_game():
     #PlayerIsWhite = True if (int)(player_color) == 1 else False # true for white , false for black
     PlayerIsWhite = True
     while running:
-      for event in pygame.event.get():
-        if (board.getTurn_counter() % 2 == 0 and PlayerIsWhite) or (board.getTurn_counter() % 2 != 0 and not PlayerIsWhite):
+      if (board.getTurn_counter() % 2 == 0 and PlayerIsWhite) or (board.getTurn_counter() % 2 != 0 and not PlayerIsWhite):
           make_random_move(board, PlayerIsWhite)
           update_game_state(window, board)
+          pygame.display.update()
+      for event in pygame.event.get():
         if event.type == pygame.QUIT:
           running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -163,6 +164,8 @@ def snap_piece_to_board(window, piece, position, board):
               board.En_Passant(piece, next_position)
             else:
               piece.move(board, next_position)
+              if (isinstance(piece, King) or isinstance(piece, Rook)):
+                piece.setHasMoved(True)
             
             board.increment_turn()
   update_game_state(window, board)  # Redraw the board

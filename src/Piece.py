@@ -26,6 +26,7 @@ class Piece:
     board.getCell(self.position).setPiece(None)
     board.getCell(next_position).setPiece(self)
     self.setPosition(next_position)
+    
       
   def checkMove(self, board, next_position):
     if (board.getCell(next_position).getPiece() == None):

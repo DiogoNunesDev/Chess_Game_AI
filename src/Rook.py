@@ -80,8 +80,7 @@ class Rook(Piece):
             board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
             board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
             return True
-          
-          
+            
   def getPossibleMoves(self, board):
     possible_moves = []
     moves = self.getMoves(board)

@@ -133,7 +133,6 @@ class Board:
       opponentColor = not isWhite
       return self.isSquareUnderAttack(kingCell, opponentColor)
     
-  
   def simulateMove(self, piece, newPosition):
     tempBoard = copy.deepcopy(self)
     tempPiece = tempBoard.getCell(piece.getPosition()).getPiece()
@@ -165,9 +164,10 @@ class Board:
     
     elif piece is not None and isinstance(piece, Rook) and not piece.hasMoved:  #If piece is a Rook
       row = 7 if piece.isWhite else 0
-      col = 4
+      king_col = 4
+      col = piece.getPosition().getCol()
       if self.checkCastleUnderAttack(piece, row, piece.getPosition().getCol()):
-        king = self.getCell(Position(row, col)).getPiece()
+        king = self.getCell(Position(row, king_col)).getPiece()
         if king is not None and isinstance(king, King) and not king.getHasMoved():
           self.castleMove(row, col, king, piece)
   

@@ -1,6 +1,7 @@
 from Piece import Piece
 from Position import Position
 
+
 class Bishop(Piece):
   
   def __init__(self, position, isWhite):
