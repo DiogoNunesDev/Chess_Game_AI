@@ -7,8 +7,6 @@ from Knight import Knight
 from Pawn import Pawn
 from Queen import Queen
 from Rook import Rook
-from Piece import Piece
-
 
 class Board:
   
