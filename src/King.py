@@ -3,22 +3,15 @@ from Position import Position
 
 class King(Piece):
   
-  def __init__(self, position, isWhite):
-    super().__init__(position, isWhite)
-    if (self.isWhite):
+  def __init__(self, position, isTeam):
+    super().__init__(position, isTeam)
+    if (self.isTeam):
       self.name = r"images\white-king.png"
     else:
       self.name = r"images\black-king.png"
-    self.hasMoved = False
-    
-  def getHasMoved(self):
-    return self.hasMoved
-  
-  def setHasMoved(self, bool):
-    self.hasMoved = bool
           
   def __str__(self):
-    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], isWhite: {self.isWhite}, Name: {self.name}'
+    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], isTeam: {self.isTeam}, Name: {self.name}'
   
   def checkMove(self, board, next_position):
     if(super().checkMove(board, next_position)):
@@ -46,12 +39,14 @@ class King(Piece):
       if next_position.getCol() in {0, 1, 2}:
         if (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
           board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
-          board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
+          board.getCell(Position(self.position.getRow(), 3)).getPiece() is None and board.getCell(Position(self.position.getRow(), 0)).getPiece() is not None and 
+          not board.getCell(Position(self.position.getRow(), 0)).getPiece().getHasMoved()):
           return True
                     
       elif next_position.getCol() in {6, 7}:
         if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
-          board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
+          board.getCell(Position(self.position.getRow(), 6)).getPiece() is None and board.getCell(Position(self.position.getRow(), 7)).getPiece() is not None and 
+          not board.getCell(Position(self.position.getRow(), 7)).getPiece().getHasMoved()):
           return True
     
     return False
@@ -61,7 +56,7 @@ class King(Piece):
     moves = self.getMoves(board)
     for next_position in moves:
       tempBoard = board.simulateMove(self, next_position)
-      if (not tempBoard.isKingInCheck(self.isWhite)):
+      if (not tempBoard.isKingInCheck()):
         possible_moves.append(next_position)
         
     return possible_moves

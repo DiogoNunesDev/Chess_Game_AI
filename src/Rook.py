@@ -4,22 +4,15 @@ from Position import Position
 
 class Rook(Piece):
   
-  def __init__(self, position, isWhite):
-    super().__init__(position, isWhite)
-    if (self.isWhite):
+  def __init__(self, position, isTeam):
+    super().__init__(position, isTeam)
+    if (self.isTeam):
       self.name = r"images\white-rook.png"
     else:
       self.name = r"images\black-rook.png"
-    self.hasMoved = False
-    
-  def getHasMoved(self):
-    return self.hasMoved
-  
-  def setHasMoved(self, bool):
-    self.hasMoved = bool
-          
+              
   def __str__(self):
-    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], isWhite: {self.isWhite}, Name: {self.name}'
+    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], Name: {self.name}'
   
   def checkMove(self, board, next_position):
     if(super().checkMove(board, next_position)):
@@ -40,7 +33,7 @@ class Rook(Piece):
         if board.getCell(intermediate_position).getPiece() is not None:
           return False
         
-      if board.getCell(next_position).getPiece() is not None and board.getCell(next_position).getPiece().isWhite == self.isWhite:
+      if board.getCell(next_position).getPiece() is not None and board.getCell(next_position).getPiece().isTeam == self.isTeam:
         return False
 
             
@@ -60,33 +53,35 @@ class Rook(Piece):
   
   def checkCastle(self, board, next_position):
     if not self.hasMoved:
-      if next_position.getRow()==self.position.getRow():
-        if next_position.getCol() in {2, 3}:
-          if (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
-            board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
-            board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
-            return True
-        elif next_position.getCol()==5:
-          if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
-            board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
-            return True
-        
-        elif next_position.getCol()==4:
-          if self.position.getCol()==7 and (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
-            board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
-            return True
+      if (board.getCell(Position(self.position.getRow(), 4)).getPiece() is not None) and (not board.getCell(Position(self.position.getRow(), 4)).getPiece().getHasMoved()):
+        if next_position.getRow()==self.position.getRow():
+          if next_position.getCol() in {2, 3} and self.position.getCol()==0:
+            if (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
+              board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
+              board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
+              return True
           
-          elif (self.position.getCol()==0 and board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
-            board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
-            board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
-            return True
+          elif next_position.getCol()==5 and self.position.getCol()==7:
+            if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
+              board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
+              return True
             
+          elif next_position.getCol()==4:
+            if self.position.getCol()==7 and (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
+              board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
+              return True
+            
+            elif self.position.getCol()==0 and (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
+              board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
+              board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
+              return True
+          
   def getPossibleMoves(self, board):
     possible_moves = []
     moves = self.getMoves(board)
     for next_position in moves:
       tempBoard = board.simulateMove(self, next_position)
-      if (not tempBoard.isKingInCheck(self.isWhite)):
+      if (not tempBoard.isKingInCheck()):
         possible_moves.append(next_position)
         
     return possible_moves

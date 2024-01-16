@@ -15,8 +15,10 @@ player_color = None
 
 def run_game():
     global selected_piece, selected_piece_position, is_dragging, dragging_offset, possible_moves, player_color
-    board = Board()
+    PlayerColor = False
+    board = Board(PlayerColor)
     board.doInitialPositioning()
+    selected_piece_info = None
     pygame.init()
     width, height = 720, 720
     window = pygame.display.set_mode((width, height))
@@ -24,74 +26,90 @@ def run_game():
     dragging_offset = (0, 0)  # Initialize dragging offset
     # Main game loop
     running = True
-    update_game_state(window, board)
+    update_game_state(window, board, PlayerColor)
     #player_color = input("Choose color: ")
-    #PlayerIsWhite = True if (int)(player_color) == 1 else False # true for white , false for black
-    PlayerIsWhite = True
+    #PlayerisTeam = True if (int)(player_color) == 1 else False # true for white , false for black
     while running:
-      if (board.getTurn_counter() % 2 == 0 and PlayerIsWhite) or (board.getTurn_counter() % 2 != 0 and not PlayerIsWhite):
-          make_random_move(board, PlayerIsWhite)
-          update_game_state(window, board)
+      if (board.getTurn_counter() % 2 == 0 and PlayerColor) or (board.getTurn_counter() % 2 != 0 and not PlayerColor):
+          make_random_move(board, PlayerColor)
+          update_game_state(window, board, PlayerColor)
           pygame.display.update()
+          #Check for End Game after each move
+          #TO-DO         
       for event in pygame.event.get():
         if event.type == pygame.QUIT:
           running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
-          is_dragging = True
-          # Handle piece selection
-          selected_piece_info = get_selected_piece(event.pos, board)
-          if selected_piece_info:
-            selected_piece, selected_piece_position = selected_piece_info
-            if selected_piece is not None:
-              if PlayerIsWhite == selected_piece.getIsWhite():
-                possible_moves = selected_piece.getPossibleMoves(board)
-                draw_possible_moves(window, possible_moves, board)
-            
-        elif event.type == pygame.MOUSEMOTION and is_dragging:
-          # Handle piece dragging
-          if PlayerIsWhite == selected_piece.getIsWhite():
-            selected_piece_position = event.pos
-            update_game_state(window, board)  # Update the entire board state
-            draw_possible_moves(window, possible_moves, board)
-            draw_dragged_piece(window, selected_piece, selected_piece_position, board)
+            if not selected_piece:
+                # Select the piece
+                selected_piece_info = get_selected_piece(event.pos, board)
+                if selected_piece_info:
+                    selected_piece, _ = selected_piece_info
+                    if selected_piece is not None and PlayerColor == selected_piece.getIsTeam():
+                        possible_moves = selected_piece.getPossibleMoves(board)
+                        update_game_state(window, board, PlayerColor)
+                        draw_possible_moves(window, possible_moves, board)
+            else:
+                # Move the piece
+                target_square = get_square_from_position(event.pos)
+                if target_square in possible_moves:
+                  snap_piece_to_board(window, selected_piece, target_square, board)
+                  update_game_state(window, board, PlayerColor)
+                  selected_piece = None  # Deselect after moving
                   
-        elif event.type == pygame.MOUSEBUTTONUP:
-          # Handle piece dropping
-          is_dragging = False
-          snap_piece_to_board(window, selected_piece, selected_piece_position, board)
+                  #Check for End Game after each move
+                  #TO-DO                     
+                else:
+                  #selected_piece = None # Deselect if invalid move
+                  if board.getCell(target_square).getPiece() is not None and selected_piece is not None and (board.getCell(target_square).getPiece().getIsTeam() == PlayerColor and selected_piece.getPosition() != board.getCell(target_square).getPiece().getPosition()): 
+                    selected_piece_info = get_selected_piece(event.pos, board)
+                    if selected_piece_info:
+                      selected_piece, _ = selected_piece_info
+                      if selected_piece is not None and PlayerColor == selected_piece.getIsTeam():
+                        possible_moves = selected_piece.getPossibleMoves(board)
+                        update_game_state(window, board, PlayerColor)
+                        draw_possible_moves(window, possible_moves, board) 
+                  else:
+                    selected_piece = None
+                    update_game_state(window, board, PlayerColor)
+            
+                    
 
-        
         pygame.display.update()
 
       
     # Quit Pygame
     pygame.quit()
 
-def update_game_state(window, board):
+def update_game_state(window, board, PlayerColor):
   WHITE = (255, 255, 255)
   window.fill(WHITE)
-  draw_board(window, board)    
-  draw_pieces(window, board)
+  draw_board(window, board, PlayerColor)    
+  draw_pieces(window, board, PlayerColor)
   
-def draw_board(window, board):
+def draw_board(window, board, PlayerColor):
   LIGHT = (50, 103, 74)
   DARK = (237, 236, 233)
   RED = (198, 98, 79, 255)
   tile_size = 720 // 8
-  isWhite = True if board.getTurn_counter() % 2 != 0 else False
+  isTeam = True if board.getTurn_counter() % 2 != 0 else False
   for row in range(8):
     for col in range(8):
-      color = DARK if (row + col) % 2 == 0 else LIGHT
+      if PlayerColor:
+        color = DARK if (row + col) % 2 == 0 else LIGHT
+      else:
+        color = LIGHT if (row + col) % 2 == 0 else DARK
+
       
       piece = board.getCell(Position(row, col)).getPiece()
-      if piece is not None and isinstance(piece, King) and piece.getIsWhite()==isWhite and board.isKingInCheck(isWhite) and piece.getPosition()==Position(row, col):
+      if piece is not None and isinstance(piece, King) and piece.getIsTeam()==isTeam and board.isKingInCheck() and piece.getPosition()==Position(row, col):
         translucent_surface = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
         translucent_surface.fill(RED)  
         window.blit(translucent_surface, (col * tile_size, row * tile_size))
       else:
         pygame.draw.rect(window, color, (col * tile_size, row * tile_size, tile_size, tile_size))
     
-def draw_pieces(window, board):
+def draw_pieces(window, board, PlayerColor):
   board_str = str(board)
   lines = board_str.strip().split("\n")  # lines of the __str__ board method
   tile_size = 720 // 8
@@ -149,27 +167,33 @@ def draw_possible_moves(window, possible_moves, board):
 
 def snap_piece_to_board(window, piece, position, board):
   if piece:
-    tile_size = 720 // 8
-    col = position[0] // tile_size
-    row = position[1] // tile_size
+    col = position.getCol()
+    row = position.getRow()
     next_position = Position(row, col)
     if is_valid_turn(piece, board):
       possible_moves = piece.getPossibleMoves(board)
       if next_position in possible_moves:
           tempBoard = board.simulateMove(piece, next_position)
-          if (not tempBoard.isKingInCheck(piece.isWhite)):
+          if (not tempBoard.isKingInCheck()):
             if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(board, next_position)):
               board.castle(piece, next_position)
+              board.increment_turn()
             elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
               board.En_Passant(piece, next_position)
+              board.increment_turn()
             else:
               piece.move(board, next_position)
-              if (isinstance(piece, King) or isinstance(piece, Rook)):
-                piece.setHasMoved(True)
+              board.increment_turn()
             
-            board.increment_turn()
-  update_game_state(window, board)  # Redraw the board
-       
+            
+  update_game_state(window, board, player_color)  # Redraw the board
+ 
+def get_square_from_position(position):
+    tile_size = 720 // 8
+    col = position[0] // tile_size
+    row = position[1] // tile_size
+    return Position(row, col)
+        
 def draw_dragged_piece(window, piece, position, board):
     if piece:
       tile_size = 720 // 8
@@ -190,11 +214,11 @@ def clear_square(window, row, col, board):
   LIGHT = (50, 103, 74)
   DARK = (237, 236, 233)
   RED = (198, 98, 79, 255)
-  isWhite = True if board.getTurn_counter() % 2 != 0 else False
+  isTeam = True if board.getTurn_counter() % 2 != 0 else False
   color = DARK if (row + col) % 2 == 0 else LIGHT
   
   piece = board.getCell(Position(row, col)).getPiece()
-  if piece is not None and isinstance(piece, King) and piece.getIsWhite()==isWhite and board.isKingInCheck(isWhite) and piece.getPosition()==Position(row, col):
+  if piece is not None and isinstance(piece, King) and piece.getIsTeam()==isTeam and board.isKingInCheck(isTeam) and piece.getPosition()==Position(row, col):
     translucent_surface = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
     translucent_surface.fill(RED)  
     window.blit(translucent_surface, (col * tile_size, row * tile_size))
@@ -207,7 +231,7 @@ def is_in_bounds(position):
 
 def is_valid_turn(piece, board):
     is_odd_turn = board.turn_counter % 2 != 0
-    return (is_odd_turn and piece.isWhite) or (not is_odd_turn and not piece.isWhite)
+    return (is_odd_turn and piece.isTeam) or (not is_odd_turn and not piece.isTeam)
 
 
 

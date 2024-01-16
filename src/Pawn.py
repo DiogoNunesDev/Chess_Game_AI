@@ -3,9 +3,9 @@ from Position import Position
 
 class Pawn(Piece):
   
-  def __init__(self, position, isWhite):
-    super().__init__(position, isWhite)
-    if (self.isWhite):
+  def __init__(self, position, isTeam):
+    super().__init__(position, isTeam)
+    if (self.isTeam):
       self.name = r"images\white-pawn.png"
     else:
       self.name = r"images\black-pawn.png"
@@ -18,11 +18,11 @@ class Pawn(Piece):
     self.en_passant = turn
       
   def __str__(self):
-    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], isWhite: {self.isWhite}, Name: {self.name}'
+    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], isTeam: {self.isTeam}, Name: {self.name}'
   
   def checkMove(self, board, next_position):
     if(super().checkMove(board, next_position)):
-      if(self.isWhite):
+      if(self.isTeam==board.PlayerColor):
         #WHITE POSSIBLE MOVES
         #No targeting piece moves
         if(board.getCell(next_position).getPiece() is None):
@@ -36,7 +36,7 @@ class Pawn(Piece):
             return True
           
         else:
-          if((board.getCell(next_position).getPiece().isWhite != self.isWhite) and 
+          if((board.getCell(next_position).getPiece().isTeam != self.isTeam) and 
               (next_position.getRow()==(self.position.getRow()-1)) and 
               ((abs(next_position.getCol() - self.position.getCol())) == 1)):
             
@@ -55,7 +55,7 @@ class Pawn(Piece):
             return True
           
         else:
-          if((board.getCell(next_position).getPiece().isWhite != self.isWhite) and 
+          if((board.getCell(next_position).getPiece().isTeam != self.isTeam) and 
               (next_position.getRow()==(self.position.getRow()+1)) and 
               ((abs(next_position.getCol() - self.position.getCol())) == 1)):
             return True
@@ -63,8 +63,8 @@ class Pawn(Piece):
     return False
   
   def checkEn_Passant(self, board, next_position):
-    row = 3 if self.isWhite else 4
-    direction = -1 if self.isWhite else 1
+    row = 3 if self.isTeam else 4
+    direction = -1 if self.isTeam else 1
     if(self.position.getRow()==row and next_position.getRow()==row+direction and next_position.getCol()!=self.position.getCol()):
       cell = board.getCell(Position(row, next_position.getCol()))
       if cell.getPiece() is not None and isinstance(cell.getPiece(), Pawn) and cell.getPiece().getEn_Passant() == board.getTurn_counter() - 1:
@@ -88,7 +88,7 @@ class Pawn(Piece):
     moves = self.getMoves(board)
     for next_position in moves:
       tempBoard = board.simulateMove(self, next_position)
-      if (not tempBoard.isKingInCheck(self.isWhite)):
+      if (not tempBoard.isKingInCheck()):
         possible_moves.append(next_position)
         
     return possible_moves
