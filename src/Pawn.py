@@ -88,7 +88,7 @@ class Pawn(Piece):
     moves = self.getMoves(board)
     for next_position in moves:
       tempBoard = board.simulateMove(self, next_position)
-      if (not tempBoard.isKingInCheck()):
+      if (not tempBoard.isKingInCheck(self.isTeam)):
         possible_moves.append(next_position)
         
     return possible_moves

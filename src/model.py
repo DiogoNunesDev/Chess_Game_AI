@@ -25,7 +25,7 @@ def make_random_move(board, PlayerColor):
     # Randomly select one of its legal moves
     next_position = random.choice(piece.getPossibleMoves(board))
     tempBoard = board.simulateMove(piece, next_position)
-    if (not tempBoard.isKingInCheck()):
+    if (not tempBoard.isKingInCheck(piece.isTeam)):
       if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(board, next_position)):
         board.castle(piece, next_position)
         board.increment_turn()
@@ -36,19 +36,3 @@ def make_random_move(board, PlayerColor):
         piece.move(board, next_position)
         board.increment_turn()
     
-"""
-possible_moves = piece.getPossibleMoves(board)
-      if next_position in possible_moves:
-          tempBoard = board.simulateMove(piece, next_position)
-          if (not tempBoard.isKingInCheck(piece.isTeam)):
-            if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(board, next_position)):
-              board.castle(piece, next_position)
-              board.increment_turn()
-            elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
-              board.En_Passant(piece, next_position)
-              board.increment_turn()
-            else:
-              piece.move(board, next_position)
-              board.increment_turn()
-
-"""

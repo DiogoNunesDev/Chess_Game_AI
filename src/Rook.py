@@ -80,8 +80,12 @@ class Rook(Piece):
     possible_moves = []
     moves = self.getMoves(board)
     for next_position in moves:
-      tempBoard = board.simulateMove(self, next_position)
-      if (not tempBoard.isKingInCheck()):
-        possible_moves.append(next_position)
-        
+      if self.checkCastle(board, next_position):
+        if not board.isKingInCheck(self.isTeam):
+          possible_moves.append(next_position)
+      else:  
+        tempBoard = board.simulateMove(self, next_position)
+        if (not tempBoard.isKingInCheck(self.isTeam)):
+            possible_moves.append(next_position)
+            
     return possible_moves

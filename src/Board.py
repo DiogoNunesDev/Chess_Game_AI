@@ -1,4 +1,5 @@
 import copy
+import pygame
 from Cell import Cell
 from Position import Position
 from Bishop import Bishop
@@ -107,17 +108,17 @@ class Board:
           teamPieces.append(piece)
           
     return teamPieces
-  
-  def getKingPosition(self, isTeam):
-    kingPosition = None
+
+  def getKing(self, isTeam):
+    king = None
     for row in range(8):
       for col in range(8):
         position = Position(row, col)
         piece = self.getCell(position).getPiece()
         if piece is not None and piece.isTeam==isTeam and isinstance(piece, King):
-          kingPosition = position
+          king = piece
     
-    return kingPosition
+    return king
   
   def isSquareUnderAttack(self, cell, isTeamAttacking):
     pieces = self.getTeamPieces() if isTeamAttacking==self.PlayerColor else self.getEnemyPieces()
@@ -126,12 +127,20 @@ class Board:
         return True
     return False
   
-  def isKingInCheck(self, isTeam):
-    kingPosition = self.getKingPosition(isTeam)
+  def isKingInCheck(self, isTeam): 
+    KingInCheck = False
+    king = self.getKing(isTeam)
+    kingPosition = king.getPosition()
     if kingPosition is not None:
       kingCell = self.getCell(kingPosition)
       opponentColor = not isTeam
-      return self.isSquareUnderAttack(kingCell, opponentColor)
+      KingInCheck = self.isSquareUnderAttack(kingCell, opponentColor)
+      if KingInCheck:
+        king.isInCheck=True 
+      else: 
+        king.isInCheck = False
+      
+    return KingInCheck
     
   def simulateMove(self, piece, newPosition):
     tempBoard = copy.deepcopy(self)
@@ -195,44 +204,61 @@ class Board:
         row_str = " | ".join(self.cells[row][col].getPiece().getName() if self.cells[row][col].getPiece() else "Empty" for col in range(8))
         board_str += row_str + "\n" + ("-" * 50) + "\n"
     return board_str
+  
+  def createEndGameScreen(self, result):
+    translucent_surface = pygame.Surface((720, 720), pygame.SRCALPHA)
+    translucent_surface.fill((255, 255, 255, 128))  # White color with half transparency
 
+    # Set up the font and render the text
+    font = pygame.font.SysFont(None, 48)
+    text = font.render(result, True, (0, 0, 0))  # Black text
+    text_rect = text.get_rect(center=(720/2, 720/2))  
+      
+    return translucent_surface, text, text_rect
+     
   def checkEndGame(self):
-    
+    endGame = False
     if self.isKingInCheck(self.PlayerColor):
       pieces = self.getTeamPieces()
       for piece in pieces:
-        if piece.getPossibleMoves() is not None:
-          return False
-            
-      print("CHECKMATE! AI Bot has Won!")    
-      return True
+        if len(piece.getPossibleMoves(self)) != 0:
+          return endGame, None, None, None
+          
+      result = "CHECKMATE! AI Bot has Won!"
+      surface, text, text_rect = self.createEndGameScreen(result)    
+      return True, surface, text, text_rect
     
     elif self.isKingInCheck(not self.PlayerColor):
-      pieces = self.getTeamPieces()
+      pieces = self.getEnemyPieces()
       for piece in pieces:
-        if piece.getPossibleMoves() is not None:
-          return False
+        if len(piece.getPossibleMoves(self)) != 0:
+          return endGame, None, None, None
       
-      print("CHECKMATE! Player has Won!")    
-      return True
+      result = "CHECKMATE! Player has Won!"
+      endGame = True
+      surface, text, text_rect = self.createEndGameScreen(result)    
+      return True, surface, text, text_rect
     
     elif not self.isKingInCheck(self.PlayerColor):
       pieces = self.getTeamPieces()
       if len(pieces) == 1:
-        if pieces[0].getPossibleMoves() is not None:
-          return False  
+        if len(pieces[0].getPossibleMoves(self)) != 0:
+          return endGame, None, None, None  
         
-        print("DRAW! No possible moves left!")    
-        return True
+        result = "DRAW! No possible moves left!"  
+        surface, text, text_rect = self.createEndGameScreen(result)    
+        return True, surface, text, text_rect
     
     elif not self.isKingInCheck(not self.PlayerColor):
-      pieces = self.getTeamPieces()
+      pieces = self.getEnemyPieces()
       if len(pieces) == 1:
-        if pieces[0].getPossibleMoves() is not None:
-          return False  
+        if len(pieces[0].getPossibleMoves(self)) != 0:
+          return endGame, None, None, None 
         
-        print("DRAW! No possible moves left!")    
-        return True
+        result = "DRAW! No possible moves left!" 
+        surface, text, text_rect = self.createEndGameScreen(result)    
+        return True, surface, text, text_rect
     
-    return False
+    return endGame, None, None, None
     
+
