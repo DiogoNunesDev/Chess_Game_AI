@@ -224,7 +224,11 @@ def snap_piece_to_board(window, piece, position, board):
               board.increment_turn()
             else:
               piece.move(board, next_position)
+              if isinstance(piece, Pawn) and next_position.getRow()==0:
+                promotion_choice = promotion_screen(window, piece)
+                board.promote(piece, promotion_choice)
               board.increment_turn()
+              
             
             
   update_game_state(window, board, PlayerColor)  # Redraw the board
@@ -239,13 +243,64 @@ def is_valid_turn(piece, board):
     is_odd_turn = board.turn_counter % 2 != 0
     return (is_odd_turn and piece.isTeam) or (not is_odd_turn and not piece.isTeam)
 
+def promotion_screen(window, pawn):
+  col = pawn.position.getCol()
+  rect_x = col * 90
 
+  # Choosing promotion piece buttons
+  queen_button = pygame.Rect(rect_x, 0, 90, 90)
+  knight_button = pygame.Rect(rect_x, 90, 90, 90)
+  rook_button = pygame.Rect(rect_x, 180, 90, 90)
+  bishop_button = pygame.Rect(rect_x, 270, 90, 90)
+  
+  color = "white" if pawn.isTeam else "black"
+  queen_img = pygame.image.load(f"images/{color}-queen.png")
+  knight_img = pygame.image.load(f"images/{color}-knight.png")
+  rook_img = pygame.image.load(f"images/{color}-rook.png")
+  bishop_img = pygame.image.load(f"images/{color}-bishop.png")
+  
+  # Get the piece's width and height (the pieces image size are all the same)
+  piece_width, piece_height = queen_img.get_size()
+  
+  running = True
+  while running:
+    for event in pygame.event.get():
+      if event.type == pygame.QUIT:
+        running = False
+        pygame.quit()
+        exit()
+      elif event.type == pygame.MOUSEBUTTONDOWN:
+        if queen_button.collidepoint(event.pos):
+          return "Queen"
+        elif knight_button.collidepoint(event.pos):
+          return "Knight"
+        elif rook_button.collidepoint(event.pos):
+          return "Rook"
+        elif bishop_button.collidepoint(event.pos):
+          return "Bishop"
+        
+    # Draw buttons
+    pygame.draw.rect(window, (255, 255, 255), queen_button)
+    piece_x = col * 90 + (90 - piece_width) // 2
+    piece_y = 0 * 90 + (90 - piece_height) // 2
+    window.blit(queen_img, (piece_x, piece_y))
+    
+    pygame.draw.rect(window, (255, 255, 255), knight_button)
+    piece_x = col * 90 + (90 - piece_width) // 2
+    piece_y = 1 * 90 + (90 - piece_height) // 2  
+    window.blit(knight_img, (piece_x, piece_y))
+    
+    pygame.draw.rect(window, (255, 255, 255), rook_button)
+    piece_x = col * 90 + (90 - piece_width) // 2
+    piece_y = 2 * 90 + (90 - piece_height) // 2
+    window.blit(rook_img, (piece_x, piece_y))
+    
+    pygame.draw.rect(window, (255, 255, 255), bishop_button)
+    piece_x = col * 90 + (90 - piece_width) // 2
+    piece_y = 3 * 90 + (90 - piece_height) // 2
+    window.blit(bishop_img, (piece_x, piece_y))
 
-
-
-
-
-
+    pygame.display.update()
 
 def main():
   run_game()

@@ -198,6 +198,25 @@ class Board:
     self.getCell(next_position).setPiece(piece)
     self.getCell(Position(next_position.getRow()+direction, next_position.getCol())).setPiece(None)
     
+  def promote(self, piece, choice):
+    if piece is not None and isinstance(piece, Pawn):
+      if choice == "Queen":
+        self.getCell(piece.position).setPiece(None)
+        queen = Queen(position=piece.position, isTeam=piece.isTeam)
+        self.getCell(piece.position).setPiece(queen)
+      elif choice == "Knight":
+        self.getCell(piece.position).setPiece(None)
+        knight = Knight(position=piece.position, isTeam=piece.isTeam)
+        self.getCell(piece.position).setPiece(knight)
+      elif choice == "Rook":
+        self.getCell(piece.position).setPiece(None)
+        rook = Rook(position=piece.position, isTeam=piece.isTeam)
+        self.getCell(piece.position).setPiece(rook)
+      elif choice == "Bishop":
+        self.getCell(piece.position).setPiece(None)
+        bishop = Bishop(position=piece.position, isTeam=piece.isTeam)
+        self.getCell(piece.position).setPiece(bishop)
+     
   def __str__(self):
     board_str = ""
     for row in range(8):
