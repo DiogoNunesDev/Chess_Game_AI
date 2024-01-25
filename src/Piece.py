@@ -46,7 +46,8 @@ class Piece:
     elif (board.getCell(next_position).getPiece().isTeam != self.isTeam):
       return True
     return False
-      
+  
+  
   def getPossibleMoves(self, board):
     pass
   

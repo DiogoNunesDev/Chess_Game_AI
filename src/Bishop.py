@@ -17,8 +17,8 @@ class Bishop(Piece):
   def checkMove(self, board, next_position):
     if(super().checkMove(board, next_position)):
       
-      row_diff = next_position.getRow() - self.position.getRow()
-      col_diff = next_position.getCol() - self.position.getCol()
+      row_diff = next_position.row - self.position.row
+      col_diff = next_position.col - self.position.col
       
       #Checking if its a diagonal move
       if abs(row_diff) != abs(col_diff):
@@ -29,7 +29,7 @@ class Bishop(Piece):
         
       #Checking each square along the diagonal, for pieces in intermediate squares
       for i in range(1, abs(row_diff)):
-        intermediate_position = Position(self.position.getRow() + i * row_direction, self.position.getCol() + i * col_direction)
+        intermediate_position = Position(self.position.row + i * row_direction, self.position.col + i * col_direction)
         
         if(board.getCell(intermediate_position).getPiece() is not None):
           return False
@@ -41,12 +41,22 @@ class Bishop(Piece):
     
   def getMoves(self, board):
     moves = []
-    next_position = None
-    for row in range(8):
-      for col in range(8):
-        next_position = Position(row, col)
-        if(self.checkMove(board, next_position)):
-          moves.append(next_position)
+    directions = [(1,1), (1,-1), (-1,1), (-1,-1)] #All 8 directions for the queens movement
+    for dir in directions:
+      row_dir, col_dir = dir
+      next_row = self.position.row + row_dir
+      next_col = self.position.col + col_dir
+      
+      while 0 <= next_row < 8 and 0 <= next_col < 8:
+        next_position = Position(next_row, next_col)
+        if board.getCell(next_position).getPiece() is not None:
+          if board.getCell(next_position).getPiece().isTeam != self.isTeam:
+            moves.append(next_position)
+          break
+        
+        moves.append(next_position)
+        next_row += row_dir
+        next_col += col_dir
     
     return moves
   
@@ -54,8 +64,7 @@ class Bishop(Piece):
     possible_moves = []
     moves = self.getMoves(board)
     for next_position in moves:
-      tempBoard = board.simulateMove(self, next_position)
-      if (not tempBoard.isKingInCheck(self.isTeam)):
+      if (not board.checkMove(self, next_position)):
         possible_moves.append(next_position)
         
     return possible_moves

@@ -4,16 +4,13 @@ class Position:
     self.row = row
     self.col = col    
     
-  def getRow(self):
-    return self.row
-  
-  def getCol(self):
-    return self.col
-  
   def __str__(self):
     return f'Row: {self.row}, Col: {self.col}'
   
+  def __hash__(self):
+        return hash((self.row, self.col))
+
   def __eq__(self, other):
-    return self.row == other.row and self.col == other.col
+    return isinstance(other, Position) and self.row == other.row and self.col == other.col
   
   

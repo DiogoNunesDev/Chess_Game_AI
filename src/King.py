@@ -1,5 +1,6 @@
 from Piece import Piece
 from Position import Position
+from Rook import Rook
 
 class King(Piece):
   
@@ -17,52 +18,63 @@ class King(Piece):
   
   def checkMove(self, board, next_position):
     if(super().checkMove(board, next_position)):
-      row_diff = next_position.getRow() - self.position.getRow()
-      col_diff = next_position.getCol() - self.position.getCol()
+      row_diff = next_position.row - self.position.row
+      col_diff = next_position.col - self.position.col
 
       # Check for standard King move (one square in any direction)
       if abs(row_diff) <= 1 and abs(col_diff) <= 1:
         return True
+    return False
 
+  def checkCastle(self, board, next_position):
+    if not self.hasMoved and next_position.row == self.position.row:
+      row = self.position.row
+      direction = 1 if next_position.col > self.position.col else -1
+      path_clear = self.isPathClearForCastle(board, row, direction)
+      rook_col = 7 if direction > 0 else 0
+      rook = board.getCell(Position(row, rook_col)).getPiece()
+            
+      return path_clear and isinstance(rook, Rook) and not rook.hasMoved
+
+  def isPathClearForCastle(self, board, row, direction):
+    col_start = 4 + direction
+    col_end = 7 if direction > 0 else 0
+    step = 1 if direction > 0 else -1
+
+    for col in range(col_start, col_end, step):
+      if board.getCell(Position(row, col)).getPiece() is not None:
+        return False
+
+    return True
+  
   def getMoves(self, board):
     moves = []
-    next_position = None
-    for row in range(8):
-      for col in range(8):
-        next_position = Position(row, col)
-        if(self.checkMove(board, next_position)):
+    directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]  # Adjacent squares in all directions
+
+    for dir in directions:
+      row_dir, col_dir = dir
+      next_row = self.position.row + row_dir
+      next_col = self.position.col + col_dir
+
+      if 0 <= next_row < 8 and 0 <= next_col < 8:
+        next_position = Position(next_row, next_col)
+        cell = board.getCell(next_position)
+        if cell.getPiece() is None or cell.getPiece().isTeam != self.isTeam:
           moves.append(next_position)
-        elif self.checkCastle(board, next_position):
-          moves.append(next_position)
+
+    # Include castling moves if applicable
+    if self.checkCastle(board, Position(self.position.row, 2)):  # Queenside
+      moves.append(Position(self.position.row, 2))
+    if self.checkCastle(board, Position(self.position.row, 6)):  # Kingside
+      moves.append(Position(self.position.row, 6))
+
     return moves
-  
-  def checkCastle(self, board, next_position):
-    if next_position.getRow()==self.position.getRow():
-      if next_position.getCol() in {0, 1, 2}:
-        if (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
-          board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
-          board.getCell(Position(self.position.getRow(), 3)).getPiece() is None and board.getCell(Position(self.position.getRow(), 0)).getPiece() is not None and 
-          not board.getCell(Position(self.position.getRow(), 0)).getPiece().getHasMoved()):
-          return True
-                    
-      elif next_position.getCol() in {6, 7}:
-        if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
-          board.getCell(Position(self.position.getRow(), 6)).getPiece() is None and board.getCell(Position(self.position.getRow(), 7)).getPiece() is not None and 
-          not board.getCell(Position(self.position.getRow(), 7)).getPiece().getHasMoved()):
-          return True
-    
-    return False
         
   def getPossibleMoves(self, board):
     possible_moves = []
     moves = self.getMoves(board)
     for next_position in moves:
-      if self.checkCastle(board, next_position):
-        if not board.isKingInCheck(self.isTeam):
-          possible_moves.append(next_position)
-      else:  
-        tempBoard = board.simulateMove(self, next_position)
-        if (not tempBoard.isKingInCheck(self.isTeam)):
-            possible_moves.append(next_position)
+      if (not board.checkMove(self, next_position)):
+        possible_moves.append(next_position)
         
     return possible_moves

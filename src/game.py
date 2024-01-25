@@ -5,7 +5,8 @@ from King import King
 from Pawn import Pawn
 from Rook import Rook
 from Position import Position
-from model import make_random_move
+from model import make_move, make_random_move
+import profile
 
 selected_piece = None
 selected_piece_position = (0, 0)
@@ -17,11 +18,15 @@ def run_game():
     width, height = 720, 720
     window = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Chess Game")
-    
+
     PlayerColor = start_screen(window)
     board = Board(PlayerColor)
     board.doInitialPositioning()
     update_game_state(window, board, PlayerColor)
+    
+    surface = None 
+    text = None
+    text_rect = None
     
     selected_piece_info = None
     running = True
@@ -32,15 +37,42 @@ def run_game():
       pygame.display.update()
       if ((board.getTurn_counter() % 2 == 0 and PlayerColor) or (board.getTurn_counter() % 2 != 0 and not PlayerColor)) and not endGame:
           make_random_move(board, PlayerColor)
+          board.updateBoardStateHistory()
           update_game_state(window, board, PlayerColor)
           pygame.display.update()
           #Check for End Game after each move
-          endGame, surface, text, text_rect = board.checkEndGame()
+          gameResult = board.checkEndGame()
+          if gameResult == 0:
+            surface, text, text_rect = board.createEndGameScreen(result= "DRAW! - Stalemate")     
+          elif gameResult == 1:
+            surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! AI Bot has Won!")
+          elif gameResult == -1:
+            surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! Player has Won!")  
+          
           if surface is not None and text is not None:
             window.blit(surface, (0, 0))
             window.blit(text, text_rect)
             pygame.display.update()
+      else:
+        """
+        make_random_move(board, not PlayerColor)
+        board.updateBoardStateHistory()        
+        update_game_state(window, board, PlayerColor)
+        pygame.display.update()
+        #Check for End Game after each move
+        gameResult = board.checkEndGame()
+        if gameResult == 0:
+          surface, text, text_rect = board.createEndGameScreen(result= "DRAW!")     
+        elif gameResult == 1:
+          surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! AI Bot has Won!")
+        elif gameResult == -1:
+          surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! Player has Won!")  
           
+        if surface is not None and text is not None:
+          window.blit(surface, (0, 0))
+          window.blit(text, text_rect)
+          pygame.display.update()
+      """  
       for event in pygame.event.get():
         if event.type == pygame.QUIT:
           running = False
@@ -62,10 +94,15 @@ def run_game():
               selected_piece = None  # Deselect after moving
                     
               #Check for End Game after each move
-              endGame, surface, text, text_rect = board.checkEndGame()
-              
+              gameResult = board.checkEndGame()
+              if gameResult == 0:
+                surface, text, text_rect = board.createEndGameScreen(result= "DRAW! - Stalemate")     
+              elif gameResult == 1:
+                surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! AI Bot has Won!")
+              elif gameResult == -1:
+                surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! Player has Won!")  
+                       
               if surface is not None and text is not None:
-                print("end")
                 window.blit(surface, (0, 0))
                 window.blit(text, text_rect)
                 pygame.display.update()
@@ -86,7 +123,7 @@ def run_game():
                     
 
           pygame.display.update()
-
+      
     # Quit Pygame
     pygame.quit()
     exit()
@@ -109,9 +146,10 @@ def start_screen(window):
         exit()
       elif event.type == pygame.MOUSEBUTTONDOWN:
         if black_button.collidepoint(event.pos):
+          print("You'll be playing as BLACK")          
           return False  # Return False for black team
         elif white_button.collidepoint(event.pos):
-          print("White button pressed")
+          print("You'll be playing as WHITE")
           return True  # Return True for white team
         
 
@@ -199,35 +237,40 @@ def draw_possible_moves(window, possible_moves, board):
     if piece:
       circle_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
       pygame.draw.circle(circle_surface, (130, 130, 130, 100), (square_size // 2, square_size // 2), square_size // 2 - 2, 5)
-      window.blit(circle_surface, (pos.getCol() * square_size, pos.getRow() * square_size))
+      window.blit(circle_surface, (pos.col * square_size, pos.row * square_size))
       
     else:
       translucent_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
       pygame.draw.circle(translucent_surface, (130, 130, 130, 100), (square_size // 2, square_size // 2), 10)
-      window.blit(translucent_surface, (pos.getCol() * square_size, pos.getRow() * square_size))
+      window.blit(translucent_surface, (pos.col * square_size, pos.row * square_size))
 
 def snap_piece_to_board(window, piece, position, board):
   if piece:
-    col = position.getCol()
-    row = position.getRow()
+    col = position.col
+    row = position.row
     next_position = Position(row, col)
     if is_valid_turn(piece, board):
       possible_moves = piece.getPossibleMoves(board)
       if next_position in possible_moves:
-          tempBoard = board.simulateMove(piece, next_position)
-          if (not tempBoard.isKingInCheck(piece.isTeam)):
-            if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(board, next_position)):
+          if (not board.checkMove(piece, next_position)):
+            board.checkFiftyMoveRule(piece, next_position)
+            if (isinstance(piece, King) and piece.checkCastle(board, next_position)):
               board.castle(piece, next_position)
               board.increment_turn()
             elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
               board.En_Passant(piece, next_position)
               board.increment_turn()
             else:
-              piece.move(board, next_position)
-              if isinstance(piece, Pawn) and next_position.getRow()==0:
+              board.movePiece(piece, next_position)
+              if isinstance(piece, Pawn) and next_position.row==0:
                 promotion_choice = promotion_screen(window, piece)
                 board.promote(piece, promotion_choice)
               board.increment_turn()
+            
+            board.updateBoardStateHistory()
+    
+                
+              
               
             
             
@@ -244,7 +287,7 @@ def is_valid_turn(piece, board):
     return (is_odd_turn and piece.isTeam) or (not is_odd_turn and not piece.isTeam)
 
 def promotion_screen(window, pawn):
-  col = pawn.position.getCol()
+  col = pawn.position.col
   rect_x = col * 90
 
   # Choosing promotion piece buttons

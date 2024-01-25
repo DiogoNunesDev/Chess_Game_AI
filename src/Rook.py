@@ -1,4 +1,3 @@
-from King import King
 from Piece import Piece
 from Position import Position
 
@@ -16,8 +15,8 @@ class Rook(Piece):
   
   def checkMove(self, board, next_position):
     if(super().checkMove(board, next_position)):
-      row_diff = next_position.getRow() - self.position.getRow()
-      col_diff = next_position.getCol() - self.position.getCol() 
+      row_diff = next_position.row - self.position.row
+      col_diff = next_position.col - self.position.col 
       
       #Checking if the move along an axis
       if row_diff != 0 and col_diff != 0:
@@ -28,7 +27,7 @@ class Rook(Piece):
       
       #Checking each square along the axis, for pieces in intermediate squares
       for i in range(1, max(abs(row_diff), abs(col_diff))):
-        intermediate_position = Position(self.position.getRow() + i * row_direction, self.position.getCol() + i * col_direction)
+        intermediate_position = Position(self.position.row + i * row_direction, self.position.col + i * col_direction)
         
         if board.getCell(intermediate_position).getPiece() is not None:
           return False
@@ -38,54 +37,33 @@ class Rook(Piece):
 
             
       return True
-    
+  @profile  
   def getMoves(self, board):
     moves = []
-    next_position = None
-    for row in range(8):
-      for col in range(8):
-        next_position = Position(row, col)
-        if(self.checkMove(board, next_position)):
-          moves.append(next_position)
-        elif self.checkCastle(board, next_position):
-          moves.append(next_position)
+    directions = [(1,0), (-1,0), (0,1), (0,-1)]
+    for dir in directions:
+      row_dir, col_dir = dir
+      next_row = self.position.row + row_dir
+      next_col = self.position.col + col_dir
+      
+      while 0 <= next_row < 8 and 0 <= next_col < 8:
+        next_position = Position(next_row, next_col)
+        if board.getCell(next_position).getPiece() is not None:
+          if board.getCell(next_position).getPiece().isTeam != self.isTeam:
+            moves.append(next_position)
+          break
+        
+        moves.append(next_position)
+        next_row += row_dir
+        next_col += col_dir
     return moves
   
-  def checkCastle(self, board, next_position):
-    if not self.hasMoved:
-      if (board.getCell(Position(self.position.getRow(), 4)).getPiece() is not None) and (not board.getCell(Position(self.position.getRow(), 4)).getPiece().getHasMoved()):
-        if next_position.getRow()==self.position.getRow():
-          if next_position.getCol() in {2, 3} and self.position.getCol()==0:
-            if (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
-              board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
-              board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
-              return True
-          
-          elif next_position.getCol()==5 and self.position.getCol()==7:
-            if (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
-              board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
-              return True
-            
-          elif next_position.getCol()==4:
-            if self.position.getCol()==7 and (board.getCell(Position(self.position.getRow(), 5)).getPiece() is None and
-              board.getCell(Position(self.position.getRow(), 6)).getPiece() is None):
-              return True
-            
-            elif self.position.getCol()==0 and (board.getCell(Position(self.position.getRow(), 1)).getPiece() is None and
-              board.getCell(Position(self.position.getRow(), 2)).getPiece() is None and
-              board.getCell(Position(self.position.getRow(), 3)).getPiece() is None):
-              return True
-          
+  @profile      
   def getPossibleMoves(self, board):
     possible_moves = []
     moves = self.getMoves(board)
     for next_position in moves:
-      if self.checkCastle(board, next_position):
-        if not board.isKingInCheck(self.isTeam):
-          possible_moves.append(next_position)
-      else:  
-        tempBoard = board.simulateMove(self, next_position)
-        if (not tempBoard.isKingInCheck(self.isTeam)):
-            possible_moves.append(next_position)
-            
+      if (not board.checkMove(self, next_position)):
+        possible_moves.append(next_position)
+        
     return possible_moves
