@@ -7,6 +7,7 @@ class Piece:
     self.isTeam = isTeam
     self.name= "None"
     self.hasMoved = False
+    self.moves = set()
     
   def getPosition(self):
     return self.position
@@ -33,17 +34,17 @@ class Piece:
     return self.position==other.position and self.isTeam==other.isTeam and self.name==other.name and self.hasMoved==other.hasMoved
   
   def move(self, board, next_position):
-    board.getCell(self.position).setPiece(None)
-    board.getCell(next_position).setPiece(self)
-    self.setPosition(next_position)
+    board.getCell_2(self.position.row, self.position.col).piece = None
+    board.getCell_2(next_position.row, next_position.col).piece = self
+    self.setPosition(next_position.row, next_position.col)
     if not self.hasMoved:
       self.setHasMoved(True)
     
       
   def checkMove(self, board, next_position):
-    if (board.getCell(next_position).getPiece() is None):
+    if (board.getCell_2(next_position.row, next_position.col).piece is None):
       return True
-    elif (board.getCell(next_position).getPiece().isTeam != self.isTeam):
+    elif (board.getCell_2(next_position.row, next_position.col).piece.isTeam != self.isTeam):
       return True
     return False
   

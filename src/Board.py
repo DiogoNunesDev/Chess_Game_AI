@@ -35,7 +35,10 @@ class Board:
     self.turn_counter += 1  
   
   def getCell(self, position):
-    return self.cells[position.row][position.col]     
+    return self.cells[position.row][position.col]  
+  
+  def getCell_2(self, row, col):
+    return self.cells[row][col] 
   
   def updateBoardStateHistory(self):
     current_state = self.__str__()
@@ -49,7 +52,7 @@ class Board:
     pieces = []
     for row in range(8):
       for col in range(8):
-        piece = self.getCell(Position(row, col)).getPiece()
+        piece = self.getCell_2(row, col).piece
         if piece is not None:# and len(piece.getPossibleMoves(self)) > 0:
           pieces.append(piece)
 
@@ -67,62 +70,62 @@ class Board:
         if(row == 0):
           if(col == 0 or col == 7):
             rook = Rook(position=Position(row, col), isTeam= not self.PlayerColor)
-            self.cells[row][col].setPiece(rook)
+            self.cells[row][col].piece = rook
           
           elif(col == 1 or col == 6):
             knight = Knight(position=Position(row, col), isTeam= not self.PlayerColor)
-            self.cells[row][col].setPiece(knight)
+            self.cells[row][col].piece = knight
           
           elif(col == 2 or col == 5):
             bishop = Bishop(position=Position(row, col), isTeam= not self.PlayerColor)
-            self.cells[row][col].setPiece(bishop)
+            self.cells[row][col].piece = bishop
             
           elif(col == 3):
             queen = Queen(position=Position(row, col), isTeam= not self.PlayerColor)
-            self.cells[row][col].setPiece(queen)
+            self.cells[row][col].piece = queen
             
           elif(col == 4):
             king = King(position=Position(row, col), isTeam= not self.PlayerColor)
-            self.cells[row][col].setPiece(king)
+            self.cells[row][col].piece = king
             self.kingPositions[not self.PlayerColor] = Position(row, col)
             
         elif(row == 1):
           pawn = Pawn(position=Position(row, col), isTeam= not self.PlayerColor)
-          self.cells[row][col].setPiece(pawn)
+          self.cells[row][col].piece = pawn
           
         #WHITE PIECES
         elif(row == 6):
           pawn = Pawn(position=Position(row, col), isTeam=self.PlayerColor)
-          self.cells[row][col].setPiece(pawn)
+          self.cells[row][col].piece = pawn
           
         elif(row == 7):
           if(col == 0 or col == 7):
             rook = Rook(position=Position(row, col), isTeam=self.PlayerColor)
-            self.cells[row][col].setPiece(rook)
+            self.cells[row][col].piece = rook
           
           elif(col == 1 or col == 6):
             knight = Knight(position=Position(row, col), isTeam=self.PlayerColor)
-            self.cells[row][col].setPiece(knight)
+            self.cells[row][col].piece = knight
           
           elif(col == 2 or col == 5):
             bishop = Bishop(position=Position(row, col), isTeam=self.PlayerColor)
-            self.cells[row][col].setPiece(bishop)
+            self.cells[row][col].piece = bishop
             
           elif(col == 4):
             king = King(position=Position(row, col), isTeam=self.PlayerColor)
-            self.cells[row][col].setPiece(king)
+            self.cells[row][col].piece = king
             self.kingPositions[self.PlayerColor] = Position(row, col)
             
           elif(col == 3):
             queen = Queen(position=Position(row, col), isTeam=self.PlayerColor)
-            self.cells[row][col].setPiece(queen)
+            self.cells[row][col].piece = queen
     
   def getEnemyPieces(self):
     enemyPieces = []
     for row in range(8):
       for col in range(8):
         position = Position(row, col)
-        piece = self.getCell(position).getPiece()
+        piece = self.getCell_2(position.row, position.col).piece
         if piece is not None and piece.getIsTeam()!=self.PlayerColor:
           enemyPieces.append(piece)
           
@@ -133,47 +136,40 @@ class Board:
     for row in range(8):
       for col in range(8):
         position = Position(row, col)
-        piece = self.getCell(position).getPiece()
+        piece = self.getCell_2(position.row, position.col).piece
         if piece is not None and piece.getIsTeam()==self.PlayerColor:
           teamPieces.append(piece)
           
     return teamPieces
 
-  def getKing(self, isTeam):
-    return self.getCell(self.kingPositions[isTeam]).getPiece()
-
   def isSquareUnderAttack(self, position, isTeamAttacking):
     # Check if the position is in the set of attacked squares for the attacking team
     return position in self.attackedSquares[isTeamAttacking]
-  
+  @profile
   def updateAttackedSquares(self):
     self.attackedSquares = {True: set(), False: set()}  # Reset the cache
     for row in range(8):
       for col in range(8):
-        piece = self.getCell(Position(row, col)).getPiece()
-        if piece:
+        piece = self.getCell_2(row, col).piece
+        if piece is not None:          
           moves = piece.getMoves(self)
           self.attackedSquares[piece.isTeam].update(moves)
   
-  @profile
   def isKingInCheck(self, isTeam): 
-    KingInCheck = False
-    king = self.getKing(isTeam)
-    if king is not None:
-      KingInCheck = self.isSquareUnderAttack(king.position, not isTeam)
-      
-      if KingInCheck:
-        king.isInCheck=True 
-      else: 
-        king.isInCheck = False
+    king = self.getCell_2(self.kingPositions[isTeam].row, self.kingPositions[isTeam].col)
+    KingInCheck = king.position in self.attackedSquares[not isTeam]
+    if KingInCheck:
+      king.isInCheck=True 
+    else: 
+      king.isInCheck = False
       
     return KingInCheck
   
   def checkMove(self, piece, newPosition):
     checkFlag = False
     piece_OriginalHasMoved = piece.hasMoved
-    original_position = piece.getPosition()
-    captured_piece = self.getCell(newPosition).getPiece()
+    original_position = piece.position
+    captured_piece = self.getCell_2(newPosition.row, newPosition.col).piece
     self.movePiece(piece, newPosition)
     if (self.isKingInCheck(piece.isTeam)):
       checkFlag = True
@@ -181,24 +177,24 @@ class Board:
     self.movePiece(piece, original_position)
     piece.hasMoved = piece_OriginalHasMoved
     if captured_piece: #If the simulated move resulted in a capture, it is reversed
-      self.getCell(newPosition).setPiece(captured_piece)
-      captured_piece.setPosition(newPosition)
+      self.getCell_2(newPosition.row, newPosition.col).piece = captured_piece
+      captured_piece.position = newPosition
     
     return checkFlag
   
   def checkCastleUnderAttack(self, piece, row, col):
     print(col)
     if col==0:
-      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 1)), not piece.isTeam)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 2)), not piece.isTeam)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 3)), not piece.isTeam)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 4)), not piece.isTeam))):
+      if (not (self.isSquareUnderAttack(self.getCell_2(row, 1), not piece.isTeam)) and 
+          (not self.isSquareUnderAttack(self.getCell_2(row, 2), not piece.isTeam)) and 
+          (not self.isSquareUnderAttack(self.getCell_2(row, 3), not piece.isTeam)) and 
+          (not self.isSquareUnderAttack(self.getCell_2(row, 4), not piece.isTeam))):
           return True
     elif col==7:
      
-      if (not (self.isSquareUnderAttack(self.getCell(Position(row, 4)), not piece.isTeam)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 5)), not piece.isTeam)) and 
-          (not self.isSquareUnderAttack(self.getCell(Position(row, 6)), not piece.isTeam))):
+      if (not (self.isSquareUnderAttack(self.getCell_2(row, 4), not piece.isTeam)) and 
+          (not self.isSquareUnderAttack(self.getCell_2(row, 5), not piece.isTeam)) and 
+          (not self.isSquareUnderAttack(self.getCell_2(row, 6), not piece.isTeam))):
           return True
     return False
   
@@ -208,7 +204,7 @@ class Board:
       direction = 1 if (next_position.col > piece.getPosition().col) else -1
       rook_col = 7 if direction > 0 else 0
       if self.checkCastleUnderAttack(piece, row, rook_col):
-        rook = self.getCell(Position(row, rook_col)).getPiece()
+        rook = self.getCell_2(row, rook_col).piece
         if isinstance(rook, Rook):
           if not rook.hasMoved:
             self.castleMove(row, direction, piece, rook)
@@ -219,16 +215,16 @@ class Board:
     self.movePiece(king, Position(row, king_col))
     self.kingPositions[king.isTeam] = Position(row, king_col)
     self.movePiece(rook, Position(row, rook_col))
-
+  
   def movePiece(self, piece, new_position):
-    start_row = 6 if piece.isTeam else 1
-    end_row = 4 if piece.isTeam else 3
+    start_row = 6 if piece.isTeam==self.PlayerColor else 1
+    end_row = 4 if piece.isTeam==self.PlayerColor else 3
     if isinstance(piece, Pawn) and piece.position.row == start_row and new_position.row == end_row:
       piece.setEn_Passant(self.turn_counter)
       
-    self.getCell(piece.getPosition()).setPiece(None)
-    self.getCell(new_position).setPiece(piece)
-    piece.setPosition(new_position)
+    self.cells[piece.position.row][piece.position.col].piece = None  
+    self.cells[new_position.row][new_position.col].piece = piece
+    piece.position = new_position  
     piece.hasMoved = True
     if isinstance(piece, King):
       self.kingPositions[piece.isTeam] = new_position
@@ -237,38 +233,40 @@ class Board:
             
   def En_Passant(self, piece, next_position):
     direction = 1 if piece.getIsTeam() else -1
-    self.getCell(piece.getPosition()).setPiece(None)
-    self.getCell(next_position).setPiece(piece)
-    self.getCell(Position(next_position.row+direction, next_position.col)).setPiece(None)
+    self.getCell_2(piece.position.row, piece.position.col).piece = None
+    self.getCell_2(next_position.row, next_position.col).piece = piece
+    self.getCell_2(next_position.row + direction, next_position.col).piece = None
     
   def promote(self, piece, choice):
     if piece is not None and isinstance(piece, Pawn):
+      row = piece.position.row
+      col = piece.position.col
       if choice == "Queen":
-        self.getCell(piece.position).setPiece(None)
+        self.getCell_2(row, col).piece = None
         queen = Queen(position=piece.position, isTeam=piece.isTeam)
-        self.getCell(piece.position).setPiece(queen)
+        self.getCell_2(row, col).piece = queen
       elif choice == "Knight":
-        self.getCell(piece.position).setPiece(None)
+        self.getCell_2(row, col).piece = None
         knight = Knight(position=piece.position, isTeam=piece.isTeam)
-        self.getCell(piece.position).setPiece(knight)
+        self.getCell_2(row, col).piece = knight
       elif choice == "Rook":
-        self.getCell(piece.position).setPiece(None)
+        self.getCell_2(row, col).piece = None
         rook = Rook(position=piece.position, isTeam=piece.isTeam)
-        self.getCell(piece.position).setPiece(rook)
+        self.getCell_2(row, col).piece = rook
       elif choice == "Bishop":
-        self.getCell(piece.position).setPiece(None)
+        self.getCell_2(row, col).piece = None
         bishop = Bishop(position=piece.position, isTeam=piece.isTeam)
-        self.getCell(piece.position).setPiece(bishop)
+        self.getCell_2(row, col).piece = bishop
      
   def __str__(self):
     board_str = ""
     for row in range(8):
-        row_str = " | ".join(self.cells[row][col].getPiece().getName() if self.cells[row][col].getPiece() else "Empty" for col in range(8))
+        row_str = " | ".join(self.cells[row][col].piece.getName() if self.cells[row][col].piece else "Empty" for col in range(8))
         board_str += row_str + "\n" + ("-" * 50) + "\n"
     return board_str
   
   def checkFiftyMoveRule(self, piece, next_position):
-    if isinstance(piece, Pawn) or (self.getCell(next_position).getPiece() is not None and self.getCell(next_position).getPiece().isTeam != self.PlayerColor):
+    if isinstance(piece, Pawn) or (self.getCell_2(next_position.row, next_position.col).piece is not None and self.getCell_2(next_position.row, next_position.col).piece.isTeam != self.PlayerColor):
       self.fiftyMoveRule_checker = 0
     else: 
       self.fiftyMoveRule_checker += 1

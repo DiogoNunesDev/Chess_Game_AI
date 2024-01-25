@@ -36,14 +36,14 @@ def run_game():
     while running:
       pygame.display.update()
       if ((board.getTurn_counter() % 2 == 0 and PlayerColor) or (board.getTurn_counter() % 2 != 0 and not PlayerColor)) and not endGame:
-          make_random_move(board, PlayerColor)
+          make_random_move(board, not PlayerColor)
           board.updateBoardStateHistory()
           update_game_state(window, board, PlayerColor)
           pygame.display.update()
           #Check for End Game after each move
           gameResult = board.checkEndGame()
           if gameResult == 0:
-            surface, text, text_rect = board.createEndGameScreen(result= "DRAW! - Stalemate")     
+            surface, text, text_rect = board.createEndGameScreen(result= "DRAW!")     
           elif gameResult == 1:
             surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! AI Bot has Won!")
           elif gameResult == -1:
@@ -53,9 +53,10 @@ def run_game():
             window.blit(surface, (0, 0))
             window.blit(text, text_rect)
             pygame.display.update()
-      else:
-        """
-        make_random_move(board, not PlayerColor)
+            break
+      #"""
+      else:  
+        make_random_move(board, PlayerColor)
         board.updateBoardStateHistory()        
         update_game_state(window, board, PlayerColor)
         pygame.display.update()
@@ -72,10 +73,11 @@ def run_game():
           window.blit(surface, (0, 0))
           window.blit(text, text_rect)
           pygame.display.update()
-      """  
+      #""" 
       for event in pygame.event.get():
         if event.type == pygame.QUIT:
           running = False
+        """
         elif event.type == pygame.MOUSEBUTTONDOWN and not endGame:
           if not selected_piece:            # Select the piece
             selected_piece_info = get_selected_piece(event.pos, board)
@@ -108,7 +110,7 @@ def run_game():
                 pygame.display.update()
 
             else: # Select or Deselect a piece
-              if board.getCell(target_square).getPiece() is not None and selected_piece is not None and (board.getCell(target_square).getPiece().getIsTeam() == PlayerColor and selected_piece.getPosition() != board.getCell(target_square).getPiece().getPosition()): 
+              if board.getCell_2(target_square.row, target_square.col).piece is not None and selected_piece is not None and (board.getCell_2(target_square.row, target_square.col).piece.getIsTeam() == PlayerColor and selected_piece.getPosition() != board.getCell_2(target_square.row, target_sqaure.col).piece.getPosition()): 
                 selected_piece_info = get_selected_piece(event.pos, board)
                 if selected_piece_info:
                   selected_piece, _ = selected_piece_info
@@ -123,7 +125,7 @@ def run_game():
                     
 
           pygame.display.update()
-      
+          """
     # Quit Pygame
     pygame.quit()
     exit()
@@ -181,7 +183,7 @@ def draw_board(window, board, PlayerColor):
       else:
         color = DARK if (row + col) % 2 == 0 else LIGHT
 
-      piece = board.getCell(Position(row, col)).getPiece()
+      piece = board.getCell_2(row, col).piece
       if piece is not None and isinstance(piece, King) and piece.getIsTeam()==isTeam and board.isKingInCheck(isTeam) and piece.getPosition()==Position(row, col):
         translucent_surface = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
         translucent_surface.fill(RED)  
@@ -215,8 +217,8 @@ def get_selected_piece(mouse_position, board):
   col = mouse_position[0] // tile_size
   row = mouse_position[1] // tile_size
 
-  cell = board.getCell(Position(row, col))
-  piece = cell.getPiece() if cell else None
+  cell = board.getCell_2(row, col)
+  piece = cell.piece if cell else None
 
   if piece:
     
@@ -232,7 +234,7 @@ def draw_possible_moves(window, possible_moves, board):
   square_size = 720 // 8
   for pos in possible_moves:
 
-    piece = board.getCell(pos).getPiece()
+    piece = board.getCell_2(pos.row, pos.col).piece
 
     if piece:
       circle_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
@@ -256,24 +258,15 @@ def snap_piece_to_board(window, piece, position, board):
             board.checkFiftyMoveRule(piece, next_position)
             if (isinstance(piece, King) and piece.checkCastle(board, next_position)):
               board.castle(piece, next_position)
-              board.increment_turn()
             elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
               board.En_Passant(piece, next_position)
-              board.increment_turn()
             else:
               board.movePiece(piece, next_position)
               if isinstance(piece, Pawn) and next_position.row==0:
                 promotion_choice = promotion_screen(window, piece)
                 board.promote(piece, promotion_choice)
-              board.increment_turn()
-            
-            board.updateBoardStateHistory()
-    
-                
-              
-              
-            
-            
+            board.increment_turn()
+            board.updateBoardStateHistory()        
   update_game_state(window, board, PlayerColor)  # Redraw the board
  
 def get_square_from_position(position):

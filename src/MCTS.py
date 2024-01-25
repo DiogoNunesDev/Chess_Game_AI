@@ -22,10 +22,9 @@ class Node:
       if self.visits == 0:
           return float('inf')  # Handle the division by zero case
       return (self.wins / self.visits) + exploration_param * math.sqrt(math.log(total_simulations) / self.visits)
-    
-    def checkMove(self, tempBoard, board, piece, next_position):
-      tempBoard = board.checkMove(piece, next_position)
-      if (not tempBoard.isKingInCheck(piece.isTeam)):
+    @profile
+    def checkMove(self, board, piece, next_position):
+      if (not board.checkMove(piece, next_position)):
         if (isinstance(piece, King) and piece.checkCastle(board, next_position)):
           board.castle(piece, next_position)
           board.increment_turn()
@@ -37,7 +36,7 @@ class Node:
           board.increment_turn()
         board.updateBoardStateHistory()
     
-     
+    @profile
     def simulateGame(self):
       result = None
       simulationBoard = copy.deepcopy(self.board)
@@ -46,28 +45,25 @@ class Node:
           piece = random.choice(simulationBoard.getTeamPieces())
           while len(piece.getPossibleMoves(simulationBoard)) == 0:
             piece = random.choice(simulationBoard.getTeamPieces())
-          next_position = random.choice(piece.getPossibleMoves(simulationBoard))
+          next_position = random.choice(list(piece.getPossibleMoves(simulationBoard)))
           
-          tempBoard = simulationBoard.checkMove(piece, next_position)
-          self.checkMove(tempBoard, simulationBoard, piece, next_position)
+          self.checkMove(simulationBoard, piece, next_position)
           
         elif simulationBoard.turn_counter % 2 != 0 and not simulationBoard.PlayerColor:
           piece = random.choice(simulationBoard.getTeamPieces())
           while len(piece.getPossibleMoves(simulationBoard)) == 0:
             piece = random.choice(simulationBoard.getTeamPieces())
-          next_position = random.choice(piece.getPossibleMoves(simulationBoard))
+          next_position = random.choice(list(piece.getPossibleMoves(simulationBoard)))
           
-          tempBoard = simulationBoard.checkMove(piece, next_position)
-          self.checkMove(tempBoard, simulationBoard, piece, next_position)
+          self.checkMove(simulationBoard, piece, next_position)
             
         else:
           piece = random.choice(simulationBoard.getEnemyPieces())
           while len(piece.getPossibleMoves(simulationBoard)) == 0:
             piece = random.choice(simulationBoard.getEnemyPieces())
-          next_position = random.choice(piece.getPossibleMoves(simulationBoard))
+          next_position = random.choice(list(piece.getPossibleMoves(simulationBoard)))
           
-          tempBoard = simulationBoard.checkMove(piece, next_position)
-          self.checkMove(tempBoard, simulationBoard, piece, next_position)
+          self.checkMove(simulationBoard, piece, next_position)
 
         result = simulationBoard.checkEndGame()
 
@@ -76,7 +72,7 @@ class Node:
     def backpropagate(self, result):
       # Update the node's statistics based on the result
       self.updateStatistics(result)
-
+      
       # Propagate the result up to the parent (if there is a parent)
       if self.parent is not None:
         self.parent.backpropagate(result)
@@ -97,14 +93,14 @@ class MCTS:
     self.depth = depth
     self.board = board
     self.AI_color = AI_color
-    
+  @profile  
   def selection(self, node):
     if len(node.children) > 0:
       total_simulations = sum(child.visits for child in node.children)
       return max(node.children, key=lambda child: child.uct_score(total_simulations))
     
     return node
-     
+  @profile  
   def expansion(self, node):
     for piece in node.board.getEnemyPieces():#Enemy pieces are the enemy of the player pieces
       for next_position in piece.getPossibleMoves(node.board):
@@ -113,8 +109,7 @@ class MCTS:
         node.children.append(expanded_node) 
         expanded_node.board = copy.deepcopy(node.board)
         
-        simulatedBoard = node.board.checkMove(piece, next_position)
-        if (not simulatedBoard.isKingInCheck(piece.isTeam)):
+        if (not node.board.checkMove(piece, next_position)):
           if ((isinstance(piece, King) or isinstance(piece, Rook)) and piece.checkCastle(expanded_node.board, next_position)):
             expanded_node.board.castle(piece, next_position)
             expanded_node.board.increment_turn()
@@ -128,7 +123,7 @@ class MCTS:
             expanded_node.board.increment_turn()
             expanded_node.move = next_position
           expanded_node.board.updateBoardStateHistory()
-
+  @profile
   def simulation(self, node):    
     for child_node in node.children:
       print("simulate")

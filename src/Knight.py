@@ -13,22 +13,9 @@ class Knight(Piece):
   def __str__(self):
     return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], isTeam: {self.isTeam}, Name: {self.name}'
   
-  def checkMove(self, board, next_position):
-    if(super().checkMove(board, next_position)):
-      
-      row_diff = abs(self.position.row - next_position.row)
-      col_diff = abs(self.position.col - next_position.col)
-
-      # if its a L-shaped move
-      if (row_diff, col_diff) in [(2, 1), (1, 2)]:
-        target_cell = board.getCell(next_position)
-        if target_cell.getPiece() is None or target_cell.getPiece().isTeam != self.isTeam:
-          return True
-
-        return False
-
+  @profile
   def getMoves(self, board):
-    moves = []
+    self.moves.clear()
     move_offsets = [(2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2), (1, -2), (2, -1)]  # All possible L-shape moves
     
     for offset in move_offsets:
@@ -37,18 +24,17 @@ class Knight(Piece):
       next_col = self.position.col + col_offset
       
       if 0 <= next_row < 8 and 0 <= next_col < 8:
-        next_position = Position(next_row, next_col)
-        cell = board.getCell(next_position)
-        if cell.getPiece() is None or cell.getPiece().isTeam != self.isTeam:
-          moves.append(next_position)
+        piece = board.getCell_2(next_row, next_col).piece
+        if piece is None or piece.isTeam != self.isTeam:
+          self.moves.add(Position(next_row, next_col))
 
-    return moves
-  
+    return self.moves
+  @profile
   def getPossibleMoves(self, board):
-    possible_moves = []
+    possible_moves = set()
     moves = self.getMoves(board)
-    for next_position in moves:
+    for next_position in set(moves):
       if (not board.checkMove(self, next_position)):
-        possible_moves.append(next_position)
+        possible_moves.add(next_position)
         
     return possible_moves
