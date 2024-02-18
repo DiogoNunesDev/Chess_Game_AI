@@ -1,40 +1,82 @@
 from Piece import Piece
-from Position import Position
 
 class Knight(Piece):
   
-  def __init__(self, position, isTeam):
-    super().__init__(position, isTeam)
-    if (self.isTeam):
-      self.name = r"images\white-knight.png"
+  def __init__(self, position, color, PlayerColor):
+    super().__init__(position, color, PlayerColor)
+    if (self.color):
+      self.path = r"images\white-knight.png"
+      self.value = 3
     else:
-      self.name = r"images\black-knight.png"
-      
-  def __str__(self):
-    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], isTeam: {self.isTeam}, Name: {self.name}'
+      self.path = r"images\black-knight.png"
+      self.value = -3
+    self.bitPosition = None
+    self.bitboard = "player_knights" if self.color == self.PlayerColor else "enemy_knights"
   
-  @profile
+  def getAttackedSquares(self, board):
+    self.attackedSquares = 0
+    position = self.bitPosition
+
+    # Masks to prevent wrapping around the board
+    not_a_file = 0xfefefefefefefefe  # Excludes 'a' file
+    not_ab_file = 0xfcfcfcfcfcfcfcfc  # Excludes 'a' and 'b' files
+    not_h_file = 0x7f7f7f7f7f7f7f7f  # Excludes 'h' file
+    not_gh_file = 0x3f3f3f3f3f3f3f3f  # Excludes 'g' and 'h' files
+
+    # Possible moves
+    left_moves = ((position << 6) & not_gh_file) | ((position << 15) & not_h_file) | ((position >> 10) & not_gh_file) | ((position >> 17) & not_h_file)
+        
+    right_moves = ((position << 10) & not_ab_file) | ((position << 17) & not_a_file) | ((position >> 6) & not_ab_file) | ((position >> 15) & not_ab_file)
+
+    self.attackedSquares = (left_moves | right_moves)
+
+    return self.attackedSquares
+  
   def getMoves(self, board):
-    self.moves.clear()
-    move_offsets = [(2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2), (1, -2), (2, -1)]  # All possible L-shape moves
+    position = self.bitPosition
+
+    # Masks to prevent wrapping around the board
+    not_a_file = 0xfefefefefefefefe  # Excludes 'a' file
+    not_ab_file = 0xfcfcfcfcfcfcfcfc  # Excludes 'a' and 'b' files
+    not_h_file = 0x7f7f7f7f7f7f7f7f  # Excludes 'h' file
+    not_gh_file = 0x3f3f3f3f3f3f3f3f  # Excludes 'g' and 'h' files
+
+    # Possible moves
+    left_moves = ((position << 6) & not_gh_file) | ((position << 15) & not_h_file) | ((position >> 10) & not_gh_file) | ((position >> 17) & not_h_file)
+        
+    right_moves = ((position << 10) & not_ab_file) | ((position << 17) & not_a_file) | ((position >> 6) & not_ab_file) | ((position >> 15) & not_ab_file)
+
+    self.moves = (left_moves | right_moves) & (board.get_player_bitboard() ^ 0xFFFFFFFFFFFFFFFF) if self.color == board.PlayerColor else (left_moves | right_moves) & (board.get_enemy_bitboard() ^ 0xFFFFFFFFFFFFFFFF)
+    # Check for valid moves and add to the set
     
-    for offset in move_offsets:
-      row_offset, col_offset = offset
-      next_row = self.position.row + row_offset
-      next_col = self.position.col + col_offset
-      
-      if 0 <= next_row < 8 and 0 <= next_col < 8:
-        piece = board.getCell_2(next_row, next_col).piece
-        if piece is None or piece.isTeam != self.isTeam:
-          self.moves.add(Position(next_row, next_col))
+    #moves = board.translate_bitboard_to_positions(moves)
 
     return self.moves
-  @profile
+  
+  
   def getPossibleMoves(self, board):
     possible_moves = set()
-    moves = self.getMoves(board)
-    for next_position in set(moves):
-      if (not board.checkMove(self, next_position)):
-        possible_moves.add(next_position)
-        
+    isPinned, move = board.isPiecePinned(self, self.color)
+    if not isPinned:
+      moves = self.getMoves(board)
+      moves = board.translate_bitboard_to_positions(moves)
+      if board.kingInCheck[self.color]:
+        for next_position in set(moves):
+          if (not board.checkMove(self, next_position)):
+            possible_moves.add(next_position)
+      else:
+        return moves
+    else:
+      if move:
+        possible_moves.add(move)
+              
     return possible_moves
+  
+  def copy(self):
+    knight = Knight(self.position, self.color, self.PlayerColor)
+    knight.bitPosition = self.bitPosition
+    knight.attackedSquares = self.attackedSquares
+    knight.hasMoved = self.hasMoved
+    knight.moves = self.moves
+    return knight
+  

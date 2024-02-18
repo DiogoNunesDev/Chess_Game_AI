@@ -1,45 +1,192 @@
 from Piece import Piece
-from Position import Position
 
 class Rook(Piece):
   
-  def __init__(self, position, isTeam):
-    super().__init__(position, isTeam)
-    if (self.isTeam):
-      self.name = r"images\white-rook.png"
+  def __init__(self, position, color, PlayerColor):
+    super().__init__(position, color, PlayerColor)
+    if (self.color):
+      self.path = r"images\white-rook.png"
+      self.value = 5
     else:
-      self.name = r"images\black-rook.png"
-              
-  def __str__(self):
-    return f'Piece: Position->[Row:{self.position.row}, Col: {self.position.col}], Name: {self.name}'
+      self.path = r"images\black-rook.png"
+      self.value = -5
+    self.bitPosition = None
+    self.bitboard = "player_rooks" if self.color == self.PlayerColor else "enemy_rooks"
   
-  @profile  
-  def getMoves(self, board):
-    self.moves.clear()
-    directions = [(1,0), (-1,0), (0,1), (0,-1)]
-    for dir in directions:
-      row_dir, col_dir = dir
-      next_row = self.position.row + row_dir
-      next_col = self.position.col + col_dir
+  
+  def getAttackedSquares(self, board):
+    self.attackedSquares = 0
+    position = self.bitPosition
+    
+    # Masks to prevent wrapping around the board
+    top_row_mask = 0xFF00000000000000 # Excludes first rank
+    bottom_row_mask = 0x00000000000000FF # Excludes last rank
+    a_file_mask = 0x0101010101010101
+    h_file_mask = 0x8080808080808080
+    
+    all_pieces_bitboard = board.get_all_pieces_bitboard()
+    team_board_bitboard =  board.get_player_bitboard() if self.color == board.PlayerColor else board.get_enemy_bitboard()
+    attackedSquares= 0
+    
+    upward_moves = position
+    downward_moves = position
+    rightward_moves = position
+    leftward_moves = position
+    
+    up_flag = True
+    dn_flag = True
+    r_flag = True
+    l_flag = True
+    
+    for i in range(1, 8):
+
+      if up_flag and (position & top_row_mask) == 0:
+        upward_moves = (position << (8*i))
+        if ((upward_moves & all_pieces_bitboard) != 0):
+          up_flag = False
+          attackedSquares |= upward_moves
+        else:
+          attackedSquares |= upward_moves
+          if (upward_moves & top_row_mask) != 0:
+            up_flag = False
       
-      while 0 <= next_row < 8 and 0 <= next_col < 8:
-        piece = board.getCell_2(next_row, next_col).piece
-        if piece is not None:
-          if piece.isTeam != self.isTeam:
-            self.moves.add(Position(next_row, next_col))
-          break
-        
-        self.moves.add(Position(next_row, next_col))
-        next_row += row_dir
-        next_col += col_dir
+      if dn_flag and (position & bottom_row_mask) == 0:
+        downward_moves = (position >> (8*i))
+        if ((downward_moves & all_pieces_bitboard) != 0):
+          dn_flag = False
+          attackedSquares |= downward_moves
+        else:
+          attackedSquares |= downward_moves
+          if (downward_moves & bottom_row_mask) != 0:
+            dn_flag = False
+            
+      if r_flag and (position & h_file_mask) == 0:
+        rightward_moves = (position << i)
+        if ((rightward_moves & all_pieces_bitboard) != 0):
+          r_flag = False
+          attackedSquares |= rightward_moves
+        else:
+          attackedSquares |= rightward_moves
+          if (rightward_moves & h_file_mask) != 0:
+            r_flag = False
+      
+      if l_flag and (position & a_file_mask) == 0:
+        leftward_moves = (position >> i)
+        if ((leftward_moves & all_pieces_bitboard) != 0):
+          l_flag = False
+          attackedSquares |= leftward_moves
+        else:
+          attackedSquares |= leftward_moves
+          if (leftward_moves & a_file_mask) != 0:
+            l_flag = False
+            
+      
+    
+    self.attackedSquares = attackedSquares & (position ^ 0xFFFFFFFFFFFFFFFF)
+    
+    return self.attackedSquares
+  
+              
+  def getMoves(self, board):
+    position = self.bitPosition
+    
+    # Masks to prevent wrapping around the board
+    top_row_mask = 0xFF00000000000000 # Excludes first rank
+    bottom_row_mask = 0x00000000000000FF # Excludes last rank
+    a_file_mask = 0x0101010101010101
+    h_file_mask = 0x8080808080808080
+    
+    all_pieces_bitboard = board.get_all_pieces_bitboard()
+    enemyTeam_board_bitboard = board.get_enemy_bitboard() if self.color == board.PlayerColor else board.get_player_bitboard()
+    team_board_bitboard =  board.get_player_bitboard() if self.color == board.PlayerColor else board.get_enemy_bitboard()
+    moves = 0
+    
+    upward_moves = position
+    downward_moves = position
+    rightward_moves = position
+    leftward_moves = position
+    
+    up_flag = True
+    dn_flag = True
+    r_flag = True
+    l_flag = True
+    
+    for i in range(1, 8):
+
+      if up_flag and (position & top_row_mask) == 0:
+        upward_moves = (position << (8*i))
+        if ((upward_moves & all_pieces_bitboard) != 0):
+          up_flag = False
+          if (upward_moves & enemyTeam_board_bitboard) != 0:
+            moves |= upward_moves
+        else:
+          moves |= upward_moves
+          if (upward_moves & top_row_mask) != 0:
+            up_flag = False
+      
+      if dn_flag and (position & bottom_row_mask) == 0:
+        downward_moves = (position >> (8*i))
+        if ((downward_moves & all_pieces_bitboard) != 0):
+          dn_flag = False
+          if (downward_moves & enemyTeam_board_bitboard) != 0:
+            moves |= downward_moves
+        else:
+          moves |= downward_moves
+          if (downward_moves & bottom_row_mask) != 0:
+            dn_flag = False
+            
+      if r_flag and (position & h_file_mask) == 0:
+        rightward_moves = (position << i)
+        if ((rightward_moves & all_pieces_bitboard) != 0):
+          r_flag = False
+          if (rightward_moves & enemyTeam_board_bitboard) != 0:
+            moves |= rightward_moves
+        else:
+          moves |= rightward_moves
+          if (rightward_moves & h_file_mask) != 0:
+            r_flag = False
+      
+      if l_flag and (position & a_file_mask) == 0:
+        leftward_moves = (position >> i)
+        if ((leftward_moves & all_pieces_bitboard) != 0):
+          l_flag = False
+          if (leftward_moves & enemyTeam_board_bitboard) != 0:
+            moves |= leftward_moves
+        else:
+          moves |= leftward_moves
+          if (leftward_moves & a_file_mask) != 0:
+            l_flag = False
+            
+      
+    
+    self.moves = (moves & (team_board_bitboard ^ 0xFFFFFFFFFFFFFFFF)) & (position ^ 0xFFFFFFFFFFFFFFFF)
+    #moves = board.translate_bitboard_to_positions(moves)
+    
     return self.moves
   
-  @profile      
+  
   def getPossibleMoves(self, board):
     possible_moves = set()
-    moves = self.getMoves(board)
-    for next_position in set(moves):
-      if (not board.checkMove(self, next_position)):
-        possible_moves.add(next_position)
-        
+    isPinned, move = board.isPiecePinned(self, self.color)
+    if not isPinned:
+      moves = self.getMoves(board)
+      moves = board.translate_bitboard_to_positions(moves)
+      if board.kingInCheck[self.color]:
+        for next_position in set(moves):
+          if (not board.checkMove(self, next_position)):
+            possible_moves.add(next_position)
+      else:
+        return moves
+    else:
+      if move:
+        possible_moves.add(move)
+              
     return possible_moves
+  
+  def copy(self):
+    rook = Rook(self.position, self.color, self.PlayerColor)
+    rook.bitPosition = self.bitPosition
+    rook.attackedSquares = self.attackedSquares
+    rook.hasMoved = self.hasMoved
+    rook.moves = self.moves
+    return rook

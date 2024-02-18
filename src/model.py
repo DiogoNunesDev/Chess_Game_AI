@@ -1,47 +1,39 @@
 import random
 import time
-from Board import Board
-from King import King
-from Position import Position
-from Rook import Rook
 from Pawn import Pawn
-from MCTS import MCTS, Node
+#from MCTS import MCTS, Node
+from minimax import MiniMax
 
-@profile
+
 def make_random_move(board, PlayerColor):
     # Collect all pieces that have legal moves and color different to the player
-    pieces = board.getEnemyPieces() if PlayerColor else board.getTeamPieces()
-    
+    #pieces = list(board.getEnemyPieces()) #Used when player is Human
+    pieces = list(board.getEnemyPieces()) if PlayerColor else list(board.getPlayerPieces())   # Used for random play on both sides
+
     if not pieces:
         return
     random.shuffle(pieces)
-
     for piece in pieces:  
       possible_moves = piece.getPossibleMoves(board)
       if possible_moves:
         next_position = random.choice(list(possible_moves))
-        if (not board.checkMove(piece, next_position)):
-          board.checkFiftyMoveRule(piece, next_position)
-          if (isinstance(piece, King) and piece.checkCastle(board, next_position)):
-            board.castle(piece, next_position)
-          elif isinstance(piece, Pawn) and piece.checkEn_Passant(board, next_position):
-            board.En_Passant(piece, next_position)
-          else:
-            board.movePiece(piece, next_position)
-            if isinstance(piece, Pawn) and next_position.row==7:
-              board.promote(piece, "Queen")
-          board.increment_turn()
-          return
-
+        #if (not board.checkMove(piece, next_position)):
+        board.checkFiftyMoveRule(piece, next_position)
+        promotion_row = 0 if piece.color == board.PlayerColor else 7
+        board.movePiece(piece, next_position)
+        if isinstance(piece, Pawn) and next_position[0]==promotion_row:
+          board.promote(piece, "Queen")
+        board.increment_turn()
+        board.updateBoardStateHistory() 
+        return
 
 def make_move(board, PlayerColor):
-  mcts = MCTS(2, board, not PlayerColor)
-  root = Node()
-  root.board = board
-  root.parent = None
-
-  start_time = time.time()
-  while time.time() - start_time < 30:
+  copy_board = board.copy()
+  mcts = MCTS(1, copy_board, not PlayerColor)
+  root = Node(copy_board, None, None, None, mcts.AI_color)
+  node = root
+  best_child = None
+  while node.depth != mcts.depth:
     node = root
     while node.children:
       print("select")
@@ -52,6 +44,17 @@ def make_move(board, PlayerColor):
       mcts.expansion(node)
     
     mcts.simulation(node)
+    print("Done")
     
-  best_child = max(root.children, key= lambda child: child.visits)
-  return best_child.move  
+    best_child = max(root.children, key= lambda child: child.visits)
+  return best_child.piece_position, best_child.move
+
+def minimax(board, depth, color):
+  minimax = MiniMax(board, depth, color)
+  return minimax.getBestMove()
+        
+        
+        
+    
+  
+  

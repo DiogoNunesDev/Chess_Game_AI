@@ -1,14 +1,19 @@
-from Piece import Piece
-from Position import Position
-
 class Cell:
   
-  def __init__(self, position, piece):
-    self.position = position
+  def __init__(self, row, col, piece):
+    self.position = (row, col)
     self.piece = piece
     
   def __str__(self):
-    return f'Cell: Position->[Row:{self.position.row}, Col: {self.position.col}], Piece: {self.piece}'
-  
-  def isOccupied(self):
-    return self.piece is not None
+    if self.piece:
+      return f'Cell: Position->[Row:{self.position[0]}, Col: {self.position[1]}], Piece: {self.piece.__str__()}'
+    else:
+      return f'Cell: Position->[Row:{self.position[0]}, Col: {self.position[1]}], Piece: None'
+    
+  def copy(self):
+    if self.piece is not None:
+      new_piece = self.piece.copy()
+      return Cell(self.position[0], self.position[1], new_piece)
+    else:
+      return Cell(self.position[0], self.position[1], None)
+
