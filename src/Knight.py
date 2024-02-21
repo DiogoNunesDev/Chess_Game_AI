@@ -6,13 +6,15 @@ class Knight(Piece):
     super().__init__(position, color, PlayerColor)
     if (self.color):
       self.path = r"images\white-knight.png"
-      self.value = 3
+      self.value = 300
     else:
       self.path = r"images\black-knight.png"
-      self.value = -3
+      self.value = -300
     self.bitPosition = None
-    self.bitboard = "player_knights" if self.color == self.PlayerColor else "enemy_knights"
-  
+    self.board = "player_knights" if self.color == self.PlayerColor else "enemy_knights"
+    self.piece_type = "Knight"
+
+    
   def getAttackedSquares(self, board):
     self.attackedSquares = 0
     position = self.bitPosition
@@ -52,8 +54,7 @@ class Knight(Piece):
     #moves = board.translate_bitboard_to_positions(moves)
 
     return self.moves
-  
-  
+   
   def getPossibleMoves(self, board):
     possible_moves = set()
     isPinned, move = board.isPiecePinned(self, self.color)

@@ -6,14 +6,16 @@ class Pawn(Piece):
     super().__init__(position, color, PlayerColor)
     if (self.color):
       self.path = r"images\white-pawn.png"
-      self.value = 1
+      self.value = 100
+      
     else:
       self.path = r"images\black-pawn.png"
-      self.value = -1
+      self.value = -100
     self.en_passant = None
     self.bitPosition = None
     self.starting_bitPosition = None
-    self.bitboard = "player_pawns" if self.color == self.PlayerColor else "enemy_pawns"
+    self.board = "player_pawns" if self.color == self.PlayerColor else "enemy_pawns"
+    self.piece_type = "Player_Pawn" if self.color == self.PlayerColor else "Enemy_Pawn"
     
   def checkEn_Passant(self, board, next_position):
     row = 3 if self.color==self.PlayerColor else 4

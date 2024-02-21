@@ -7,16 +7,17 @@ class Bishop(Piece):
     super().__init__(position, color, PlayerColor)
     if (self.color):
       self.path = r"images\white-bishop.png"
-      self.value = 3
+      self.value = 310
     else:
       self.path = r"images\black-bishop.png"
-      self.value = -3
+      self.value = -310
     self.bitPosition = None
-    self.bitboard = "player_bishops" if self.color == self.PlayerColor else "enemy_bishops"
-  
+    self.board = "player_bishops" if self.color == self.PlayerColor else "enemy_bishops"
+    self.piece_type = "Bishop"
+
   
   def getAttackedSquares(self, board):
-    self.attackedSquares = 0
+    self.attackedSquares = 0b0000000000000000000000000000000000000000000000000000000000000000
     position = self.bitPosition
 
     # Masks to prevent wrapping around the board
@@ -28,8 +29,7 @@ class Bishop(Piece):
     h_file_mask = 0x8080808080808080
     
     all_pieces_bitboard = board.get_all_pieces_bitboard()
-    team_board_bitboard =  board.get_player_bitboard() if self.color == board.PlayerColor else board.get_enemy_bitboard()
-    attackedSquares = 0
+    attackedSquares = 0b0000000000000000000000000000000000000000000000000000000000000000
     
     # Diagonal moves
     upper_left_moves = position

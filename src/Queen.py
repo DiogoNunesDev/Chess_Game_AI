@@ -6,16 +6,19 @@ class Queen(Piece):
     super().__init__(position, color, PlayerColor)
     if (self.color):
       self.path = r"images\white-queen.png"
-      self.value = 9
+      self.value = 900
+      
     else:
       self.path = r"images\black-queen.png"
-      self.value = -9
+      self.value = -900
     self.bitPosition = None
-    self.bitboard = "player_queen" if self.color == self.PlayerColor else "enemy_queen"
-  
+    self.board = "player_queen" if self.color == self.PlayerColor else "enemy_queen"
+    self.piece_type = "Queen"
+
+
 
   def getAttackedSquares(self, board):
-    self.attackedSquares = 0
+    self.attackedSquares = 0b0000000000000000000000000000000000000000000000000000000000000000
     position = self.bitPosition
 
     # Masks to prevent wrapping around the board
@@ -27,7 +30,7 @@ class Queen(Piece):
     h_file_mask = 0x8080808080808080
     
     all_pieces_bitboard = board.get_all_pieces_bitboard()
-    attackedSquares = 0
+    attackedSquares = 0b0000000000000000000000000000000000000000000000000000000000000000
     
     upper_left_moves = position
     upper_right_moves = position
@@ -277,7 +280,6 @@ class Queen(Piece):
     
     return self.moves
    
-    
   def getPossibleMoves(self, board):
     possible_moves = set()
     isPinned, move = board.isPiecePinned(self, self.color)

@@ -14,7 +14,8 @@ class King(Piece):
       
     self.isInCheck = False
     self.bitPosition = None
-    self.bitboard = "player_king" if self.color == self.PlayerColor else "enemy_king"
+    self.board = "player_king" if self.color == self.PlayerColor else "enemy_king"
+    self.piece_type = "King"
   
   
   def isPathClearForCastle(self, board, row, direction):

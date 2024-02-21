@@ -36,11 +36,10 @@ def run_game():
       
       #position, move = minimax(board, 2, not PlayerColor)
       
-      mcts_piece_position, move = minimax(board, 4, not PlayerColor)
-      print(mcts_piece_position)
-      print(move)
-      piece = board.getCell(mcts_piece_position[0], mcts_piece_position[1]).piece
-      print(piece)
+      position, move = minimax(board, 4, not PlayerColor)
+
+      piece = board.getCell(position[0], position[1]).piece
+      board.print_bitboard(board.get_all_pieces_bitboard())
       board.checkFiftyMoveRule(piece, move)
       promotion_row = 0 if piece.color == board.PlayerColor else 7
       board.movePiece(piece, move)
@@ -319,34 +318,7 @@ def is_valid_turn(piece, board):
 
 def main():
   run_game()
-  bottom_row_mask = 0x00000000000000FF
-  board = Board(False)
-  position = 0b0000000000000000000000000001000000000000000000000000000000000000
-  king_pos = 0b0000000000000000000000000000000000000000000000000001000000000000
-  pinned_pos = 0b0000000000000000000000000000000000000000000100000000000000000000
-  board_all_positions = 0b0000000000000000000000000000000000000000000100000001000000000000
-  board.print_bitboard(board_all_positions)
-  board.print_bitboard(king_pos | pinned_pos)
-  print("King")
-  board.print_bitboard(position)
-  print("Queen")
-  dn_flag = True
-  
-  attackedSquares = 0
-  for i in range(1, 8):
-    if dn_flag and (position & bottom_row_mask) == 0:
-      downward_moves = (position >> (8*i))
-      attackedSquares |= downward_moves
-      if (downward_moves & bottom_row_mask) != 0:
-        dn_flag = False
-  
-  board.print_bitboard(attackedSquares)
-  
-  print("okokokokok")
-  
-  board.print_bitboard(attackedSquares & (board_all_positions))
-  
-  #only those pieces there: if attacked Squared & board_all_positions == (king_pos | pinned_piece_pos)
+
   
   
 if __name__ == "__main__":
