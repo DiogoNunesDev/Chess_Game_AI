@@ -118,6 +118,7 @@ class Pawn(Piece):
     possible_moves = set()
     isPinned, move = board.isPiecePinned(self, self.color)
     if not isPinned:
+      print("ok")
       moves = self.getMoves(board)
       moves = board.translate_bitboard_to_positions(moves)
       if board.kingInCheck[self.color]:
@@ -127,7 +128,7 @@ class Pawn(Piece):
       else:
         return moves
     else:
-      if move:
+      if move in moves:
         possible_moves.add(move)
               
     return possible_moves

@@ -227,13 +227,14 @@ class Board:
   def init_all_pieces_moves(self):
     for piece in self.pieces:
       piece.getMoves(self)
+      if piece in self.slidingPieces:
+        piece.getAttackedSquares(self)
   
-  @profile
   def update_AttackMap_of_AffectedPieces(self, moved_piece, original_position, new_position):
     for piece in self.slidingPieces:
       #if piece.piece_type == "Bishop" or piece.piece_type == "Rook" or piece.piece_type == "Queen":
-        if (original_position & piece.attackedSquares) > 0 or (new_position & piece.attackedSquares) > 0:
-          piece.getAttackedSquares(self)
+      if (original_position & piece.attackedSquares) > 0 or (new_position & piece.attackedSquares) > 0:
+        piece.getAttackedSquares(self)
         
   def update_AttackMap_of_AffectedPieces_En_Passant(self, moved_piece, original_position, new_position, en_passanted_piece_square): #to be updated
     moved_piece.getAttackedSquares(self)
@@ -346,7 +347,6 @@ class Board:
     
     return False
   
-  @profile
   def movePiece(self, piece, next_position):
     if (piece.piece_type == "King" and piece.checkCastle(self, next_position)):
       self.castle(piece, next_position)
@@ -388,8 +388,11 @@ class Board:
         self.kingPositions[piece.color] = next_position
       
       next_bit_position = self.translate_position_to_binary(next_position[0], next_position[1])
-      self.update_AttackMap_of_AffectedPieces(piece, original_bit_position, next_bit_position)
-              
+    
+    self.update_AttackMap_of_AffectedPieces(piece, original_bit_position, next_bit_position)
+    if self.getCell(3, 1).piece is not None and self.getCell(3, 1).piece.piece_type == "Bishop":
+      self.print_bitboard((self.getCell(3, 1).piece.attackedSquares)) 
+      
     if self.isKingInCheck(not piece.color):
       self.kingInCheck[not piece.color] = True   
     
@@ -417,7 +420,6 @@ class Board:
     if piece.piece_type == "King":
       self.kingPositions[piece.color] = next_position
   
-  @profile
   def checkMove(self, piece, newPosition):
     checkFlag = False
     original_position = piece.position
@@ -451,7 +453,6 @@ class Board:
     
     return checkFlag
 
-  @profile
   def isKingInCheck(self, color):
     king_pos = self.translate_position_to_binary(self.kingPositions[color][0], self.kingPositions[color][1])
     for piece in self.piecesByColor[not color]:
@@ -657,13 +658,11 @@ class Board:
     #DRAW
     return None
 
-  @profile
   def getPositionValue(self, piece):
     n = 1 if piece.color else -1
     value = self.piece_position_values[piece.board][piece.position[0] * 8 + piece.position[1]]
     return value * n
   
-  @profile
   def evaluationFunction(self):
     eval=0
     for piece in self.pieces:
@@ -680,7 +679,10 @@ class Board:
     return board_str
   
   def copy_dict(self, dictionary):
-    return {key: value for key, value in dictionary.items()}
+    new_dict = {}
+    for key, value in dictionary.items():
+      new_dict[key] = value  
+    return new_dict
   
   def copy(self):
     new_board = Board(self.PlayerColor)
@@ -690,6 +692,7 @@ class Board:
     new_board.kingPositions = self.copy_dict(self.kingPositions)
     new_board.kingInCheck = self.copy_dict(self.kingInCheck)
     new_board.boardStateHistory = self.copy_dict(self.boardStateHistory)
+    new_board.bit_boards = self.copy_dict(self.bit_boards)
     new_board.pieces = set()
     new_board.piecesByColor[True] = set()
     new_board.piecesByColor[False] = set()
@@ -708,30 +711,50 @@ class Board:
         
     return new_board
 
+  @profile
+  def is_clear_path_between_except_pinned(self, start_pos, end_pos, pinned_piece_pos):
+    row_step = 1 if end_pos[0] > start_pos[0] else -1 if end_pos[0] < start_pos[0] else 0
+    col_step = 1 if end_pos[1] > start_pos[1] else -1 if end_pos[1] < start_pos[1] else 0
+
+    row, col = start_pos
+    row += row_step
+    col += col_step
+
+    while (row, col) != end_pos:
+        if self.cells[row][col].piece is not None and (row, col) != pinned_piece_pos:
+            return False
+        row += row_step
+        col += col_step
+
+    return True
+
+
+  
   def is_Piece_Aligned_With_King(self, piece_position, color):
-    king_posiiton = self.kingPositions[color]
-    if piece_position[0] == king_posiiton[0] or piece_position[1] == king_posiiton[1]:
+    king_position = self.kingPositions[color]
+    if piece_position[0] == king_position[0] or piece_position[1] == king_position[1]:
       return True
     
-    if abs(piece_position[0] - king_posiiton[0]) == abs(piece_position[1] - piece_position[1]):
+    if abs(piece_position[0] - king_position[0]) == abs(piece_position[1] - king_position[1]):
         return True
-          
+      
     return False
   
+  @profile
   def isPiecePinned(self, pinned_piece, color):
     if self.is_Piece_Aligned_With_King(pinned_piece.position, color):
       pinned_piece_bitPosition = pinned_piece.bitPosition
-      for piece in self.piecesByColor[color]:
-        if (piece.piece_type == "Rook" or piece.piece_type == "Bishop" or piece.piece_type == "Queen") and (piece.attackedSquares & pinned_piece_bitPosition > 0):
+      for piece in self.slidingPieces:
+        if piece.color == (not color) and (piece.attackedSquares & pinned_piece_bitPosition > 0):
           king_pos = self.kingPositions[color]
           king_bitPosition = self.translate_position_to_binary(king_pos[0], king_pos[1])
-          if self.is_Piece_Aligned_With_King(piece.position, color) and (piece.attackedSquares & king_bitPosition == 0): 
-            return True, piece.position
+          if self.is_Piece_Aligned_With_King(piece.position, color) and (piece.attackedSquares & king_bitPosition == 0):
+            if self.is_clear_path_between_except_pinned(piece.position , king_pos, pinned_piece.position): 
+              return True, piece.position
           
           
-    return False, None
-      
-  @profile
+    return False, None   
+  
   def storeStateBeforeMove(self, piece, newPosition):
     original_position = piece.position
     original_bit_position = piece.bitPosition
@@ -760,16 +783,13 @@ class Board:
     if piece.piece_type == "King":
       self.kingPositions[piece.color] = original_position
      
-  @profile
   def unmakeMove(self, piece, newPosition, storedState):
     original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position = storedState
     if en_passant_flag:
       self.reverseMove(piece, original_position, original_bit_position, captured_piece)
-      self.updateBitBoards(piece.board, captured_piece.board, piece.position, newPosition)
       en_passanted_piece_square = None
       direction = 1 if piece.color==self.PlayerColor else -1
       en_passanted_piece_square = self.translate_position_to_binary(newPosition[0] + direction, newPosition[1])
-      self.updateBitBoards_En_Passant(captured_piece.board, en_passanted_piece_square)
       self.getCell(newPosition[0] + direction, newPosition[1]).piece = captured_piece
       self.pieces.add(captured_piece)
       self.piecesByColor[captured_piece.color].add(captured_piece)
@@ -781,21 +801,16 @@ class Board:
       piece.position = original_position 
       piece.bitPosition = original_bit_position
       piece.hasMoved = original_hasMoved
-      self.bit_boards = original_bitboards   
-            
       if captured_piece: #If the simulated move resulted in a capture, it is reversed
-        self.updateBitBoards(piece.board, captured_piece.board, piece.position, newPosition)
         if captured_piece.piece_type == "Bishop" or captured_piece.piece_type == "Rook" or captured_piece.piece_type == "Queen":
             self.slidingPieces.add(captured_piece)
         self.getCell(newPosition[0], newPosition[1]).piece = captured_piece
         captured_piece.position = newPosition
         self.pieces.add(captured_piece)
         self.piecesByColor[captured_piece.color].add(captured_piece)
-      else:
-        self.updateBitBoards(piece.board, None, piece.position, newPosition)
-  
+
+    self.bit_boards = original_bitboards   
     self.turn_counter -= 1
-  
   
   
   """

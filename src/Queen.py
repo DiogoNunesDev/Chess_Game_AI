@@ -293,7 +293,7 @@ class Queen(Piece):
       else:
         return moves
     else:
-      if move:
+      if move in moves:
         possible_moves.add(move)
               
     return possible_moves

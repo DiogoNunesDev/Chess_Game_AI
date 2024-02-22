@@ -52,6 +52,7 @@ def make_move(board, PlayerColor):
 def minimax(board, depth, color):
   minimax = MiniMax(board, depth, color)
   return minimax.getBestMove()
+
         
         
         

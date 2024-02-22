@@ -28,18 +28,16 @@ def run_game():
   
   while(running):
     pygame.display.update()
-    #"""
+    """
     if PlayerColor and board.turn_counter % 2 == 0 and not board.endGame:
       #print("ok")
       #time.sleep(0.25)
       #make_random_move(board, PlayerColor)
       
       #position, move = minimax(board, 2, not PlayerColor)
-      
       position, move = minimax(board, 4, not PlayerColor)
 
       piece = board.getCell(position[0], position[1]).piece
-      board.print_bitboard(board.get_all_pieces_bitboard())
       board.checkFiftyMoveRule(piece, move)
       promotion_row = 0 if piece.color == board.PlayerColor else 7
       board.movePiece(piece, move)
@@ -47,10 +45,7 @@ def run_game():
         board.promote(piece, "Queen")
       board.increment_turn()
       board.updateBoardStateHistory() 
-      """      
-      make_random_move(board, PlayerColor)
-      board.updateBoardStateHistory()
-      """
+      
       update_game_state(window, board)
       pygame.display.update()
       #Check for End Game after each move
@@ -68,7 +63,7 @@ def run_game():
         pygame.display.update()
         #break
     elif PlayerColor and board.turn_counter % 2 != 0: 
-      """
+      
       make_random_move(board, not PlayerColor)
       board.updateBoardStateHistory()
       update_game_state(window, board)

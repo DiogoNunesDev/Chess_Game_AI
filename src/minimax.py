@@ -6,8 +6,9 @@ class MiniMax:
     self.depth = depth
     self.color = color
     self.board = board.copy()
+    self.board.print_bitboard(self.board.get_all_pieces_bitboard())
 
-  @profile
+  
   def minimax(self, depth, isMaximizingPlayer, alpha, beta):
     if depth == 0:
       return self.board.evaluationFunction()
@@ -23,7 +24,9 @@ class MiniMax:
           self.board.increment_turn()
 
           eval = self.minimax(depth - 1, False, alpha, beta)
+          
           self.board.unmakeMove(piece, move, storedState)
+
           maxEvaluation = max(maxEvaluation, eval)
           alpha = max(alpha, eval)
 
@@ -43,6 +46,7 @@ class MiniMax:
           eval = self.minimax(depth - 1, True, alpha, beta)
           
           self.board.unmakeMove(piece, move, storedState)
+
           minEvaluation = min(minEvaluation, eval)
           beta = min(beta, eval)
 
@@ -58,16 +62,17 @@ class MiniMax:
     beta = float("inf")
 
     for piece in self.board.piecesByColor[self.color]:
+      if piece.position == (1, 3):
+        print(self.board.isPiecePinned(piece, False))
       for move in piece.getPossibleMoves(self.board):
         storedState = self.board.storeStateBeforeMove(piece, move)
         self.board.movePiece(piece, move)
         if isinstance(piece, Pawn) and move[0] == (0 if piece.color == self.board.PlayerColor else 7):
           self.board.promote(piece, "Queen")
-          self.board.increment_turn()
+        self.board.increment_turn()
 
         value = self.minimax(self.depth - 1, not self.color, alpha, beta)
 
-        print(self.board)
         self.board.unmakeMove(piece, move, storedState)
         
         if (self.color and value > bestValue) or (not self.color and value < bestValue):
