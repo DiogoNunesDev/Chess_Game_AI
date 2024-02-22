@@ -13,6 +13,7 @@ class King(Piece):
       self.value = float('-inf')
       
     self.isInCheck = False
+    self.castled = False
     self.bitPosition = None
     self.board = "player_king" if self.color == self.PlayerColor else "enemy_king"
     self.piece_type = "King"
@@ -29,7 +30,6 @@ class King(Piece):
           return False
       elif board.getCell(row, col).piece is not None or board.isSquareUnderAttack((row, col), self.color):
         return False
-
     return True
 
   def checkCastle(self, board, next_position):
@@ -39,7 +39,7 @@ class King(Piece):
       path_clear = self.isPathClearForCastle(board, row, direction)
       rook_col = 7 if direction > 0 else 0
       rook = board.getCell(row, rook_col).piece
-            
+
       return path_clear and isinstance(rook, Rook) and not rook.hasMoved
 
   def getAttackedSquares(self, board):
@@ -96,7 +96,6 @@ class King(Piece):
     self.moves = moves & (board.get_player_bitboard() ^ 0xFFFFFFFFFFFFFFFF) if self.color == board.PlayerColor else moves & (board.get_enemy_bitboard() ^ 0xFFFFFFFFFFFFFFFF)
 
     return self.moves
-  
   
   def getPossibleMoves(self, board):
     possible_moves = set()

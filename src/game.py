@@ -28,14 +28,14 @@ def run_game():
   
   while(running):
     pygame.display.update()
-    """
+
     if PlayerColor and board.turn_counter % 2 == 0 and not board.endGame:
       #print("ok")
       #time.sleep(0.25)
       #make_random_move(board, PlayerColor)
       
       #position, move = minimax(board, 2, not PlayerColor)
-      position, move = minimax(board, 4, not PlayerColor)
+      position, move = minimax(board, 3, not PlayerColor)
 
       piece = board.getCell(position[0], position[1]).piece
       board.checkFiftyMoveRule(piece, move)
@@ -63,7 +63,7 @@ def run_game():
         pygame.display.update()
         #break
     elif PlayerColor and board.turn_counter % 2 != 0: 
-      
+      """
       make_random_move(board, not PlayerColor)
       board.updateBoardStateHistory()
       update_game_state(window, board)
@@ -93,7 +93,9 @@ def run_game():
                   possible_moves = selected_piece.getPossibleMoves(board)
                   update_game_state(window, board)
                   draw_possible_moves(window, possible_moves, board)
-                  
+                  if selected_piece.piece_type == "King":
+                    print(selected_piece.castled)
+
             else:
               
               target_square = get_square_from_position(event.pos)

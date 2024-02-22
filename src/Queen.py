@@ -283,9 +283,9 @@ class Queen(Piece):
   def getPossibleMoves(self, board):
     possible_moves = set()
     isPinned, move = board.isPiecePinned(self, self.color)
+    moves = self.getMoves(board)
+    moves = board.translate_bitboard_to_positions(moves)
     if not isPinned:
-      moves = self.getMoves(board)
-      moves = board.translate_bitboard_to_positions(moves)
       if board.kingInCheck[self.color]:
         for next_position in set(moves):
           if (not board.checkMove(self, next_position)):

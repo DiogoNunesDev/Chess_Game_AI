@@ -230,7 +230,7 @@ class Board:
       if piece in self.slidingPieces:
         piece.getAttackedSquares(self)
   
-  def update_AttackMap_of_AffectedPieces(self, moved_piece, original_position, new_position):
+  def update_AttackMap_of_AffectedPieces(self, original_position, new_position):
     for piece in self.slidingPieces:
       #if piece.piece_type == "Bishop" or piece.piece_type == "Rook" or piece.piece_type == "Queen":
       if (original_position & piece.attackedSquares) > 0 or (new_position & piece.attackedSquares) > 0:
@@ -340,13 +340,13 @@ class Board:
   
   def isSquareUnderAttack(self, position, color):
     bit_position = self.translate_position_to_binary(position[0], position[1])
-    pieces = self.piecesByColor[color]
-    for piece in pieces:
+    for piece in self.piecesByColor[not color]:
       if (piece.attackedSquares & bit_position) != 0:
         return True
     
     return False
   
+  @profile
   def movePiece(self, piece, next_position):
     if (piece.piece_type == "King" and piece.checkCastle(self, next_position)):
       self.castle(piece, next_position)
@@ -389,9 +389,7 @@ class Board:
       
       next_bit_position = self.translate_position_to_binary(next_position[0], next_position[1])
     
-    self.update_AttackMap_of_AffectedPieces(piece, original_bit_position, next_bit_position)
-    if self.getCell(3, 1).piece is not None and self.getCell(3, 1).piece.piece_type == "Bishop":
-      self.print_bitboard((self.getCell(3, 1).piece.attackedSquares)) 
+      self.update_AttackMap_of_AffectedPieces(original_bit_position, next_bit_position)
       
     if self.isKingInCheck(not piece.color):
       self.kingInCheck[not piece.color] = True   
@@ -420,6 +418,7 @@ class Board:
     if piece.piece_type == "King":
       self.kingPositions[piece.color] = next_position
   
+  @profile
   def checkMove(self, piece, newPosition):
     checkFlag = False
     original_position = piece.position
@@ -430,7 +429,8 @@ class Board:
     new_bit_position = self.translate_position_to_binary(newPosition[0], newPosition[1])
     
     self.simulateMove(piece, newPosition)
-      
+    self.update_AttackMap_of_AffectedPieces(new_bit_position, original_bit_position)
+    
     if (self.isKingInCheck(piece.color)):
       checkFlag = True
     
@@ -449,10 +449,11 @@ class Board:
       if captured_piece in self.slidingPieces:
         self.slidingPieces.add(captured_piece)
       
-    self.update_AttackMap_of_AffectedPieces(piece, new_bit_position, original_bit_position)
-    
+    self.update_AttackMap_of_AffectedPieces(new_bit_position, original_bit_position)
+
     return checkFlag
 
+  @profile
   def isKingInCheck(self, color):
     king_pos = self.translate_position_to_binary(self.kingPositions[color][0], self.kingPositions[color][1])
     for piece in self.piecesByColor[not color]:
@@ -484,6 +485,7 @@ class Board:
     piece.hasMoved = True
     piece.position = (row, king_col)
     self.kingPositions[piece.color] = (row, king_col)
+    piece.castled = True
     
     self.cells[row][rook_init_col].piece = None
     self.cells[row][rook_col].piece = rook
@@ -668,6 +670,9 @@ class Board:
     for piece in self.pieces:
       if not piece.piece_type == "King":
         eval += piece.value
+      else:
+        if piece.castled == True:
+          eval += 1000
       eval += self.getPositionValue(piece)
     return eval
 
@@ -711,7 +716,6 @@ class Board:
         
     return new_board
 
-  @profile
   def is_clear_path_between_except_pinned(self, start_pos, end_pos, pinned_piece_pos):
     row_step = 1 if end_pos[0] > start_pos[0] else -1 if end_pos[0] < start_pos[0] else 0
     col_step = 1 if end_pos[1] > start_pos[1] else -1 if end_pos[1] < start_pos[1] else 0
@@ -727,8 +731,6 @@ class Board:
         col += col_step
 
     return True
-
-
   
   def is_Piece_Aligned_With_King(self, piece_position, color):
     king_position = self.kingPositions[color]
@@ -740,7 +742,6 @@ class Board:
       
     return False
   
-  @profile
   def isPiecePinned(self, pinned_piece, color):
     if self.is_Piece_Aligned_With_King(pinned_piece.position, color):
       pinned_piece_bitPosition = pinned_piece.bitPosition
@@ -769,7 +770,24 @@ class Board:
         captured_piece = self.getCell(newPosition[0] + direction, newPosition[1]).piece
     new_bit_position = self.translate_position_to_binary(newPosition[0], newPosition[1])
     return (original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position)
-    
+   
+  def reverseCastle(self, piece, original_bit_position):
+    piece.position = (piece.position[0], 4)
+    piece.hasMoved = False
+    piece.castled = False
+    piece.bitPosition = original_bit_position
+    self.kingPositions[piece.color] = (piece.position[0], 4)
+      
+    direction = -1 if piece.position[1] < 4 else 1
+    start_rook_col = 0 if piece.position[1] < 4 else 7
+    rook = self.getCell(piece.position[0], 4 + direction).piece
+    print(self)
+    print((piece.position[0], 4 + direction))
+    rook.hasMoved = False
+    rook.position = (piece.position[0], start_rook_col)
+    rook.bitPosition = self.translate_position_to_binary(rook.position[0], rook.position[1])
+    rook.getAttackedSquares(self)
+     
   def reverseMove(self, piece, original_position, original_bit_position, captured_piece):
     
     self.cells[piece.position[0]][piece.position[1]].piece = None
@@ -785,7 +803,13 @@ class Board:
      
   def unmakeMove(self, piece, newPosition, storedState):
     original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position = storedState
-    if en_passant_flag:
+    old_position = self.translate_position_to_binary(piece.position[0], piece.position[1])
+    row = 0 if piece.color != self.PlayerColor else 7
+    
+    if piece.piece_type == "King" and (piece.position == (row, 2) or piece.position == (row, 6)) and piece.castled == True:
+      self.reverseCastle(piece, original_bit_position)
+    
+    elif en_passant_flag:
       self.reverseMove(piece, original_position, original_bit_position, captured_piece)
       en_passanted_piece_square = None
       direction = 1 if piece.color==self.PlayerColor else -1
@@ -798,8 +822,6 @@ class Board:
       
     else:
       self.reverseMove(piece, original_position, original_bit_position, captured_piece)   
-      piece.position = original_position 
-      piece.bitPosition = original_bit_position
       piece.hasMoved = original_hasMoved
       if captured_piece: #If the simulated move resulted in a capture, it is reversed
         if captured_piece.piece_type == "Bishop" or captured_piece.piece_type == "Rook" or captured_piece.piece_type == "Queen":
@@ -809,91 +831,10 @@ class Board:
         self.pieces.add(captured_piece)
         self.piecesByColor[captured_piece.color].add(captured_piece)
 
+      self.update_AttackMap_of_AffectedPieces(old_position, original_bit_position)
+      
     self.bit_boards = original_bitboards   
     self.turn_counter -= 1
   
   
-  """
   
-  
-  
-  
-  def checkMove(self, piece, newPosition):
-    checkFlag = False
-    original_position = piece.position
-    original_bit_position = piece.bitPosition
-    original_bitboards = self.copy_dict(self.bit_boards)
-    original_hasMoved = piece.hasMoved
-    captured_piece = self.getCell(newPosition[0], newPosition[1]).piece
-    en_passant_flag = False
-    new_bit_position = self.translate_position_to_binary(newPosition[0], newPosition[1])
-    
-    
-    if isinstance(piece, Pawn):
-      if piece.checkEn_Passant(self, newPosition):
-        direction = 1 if piece.color==self.PlayerColor else -1
-        captured_piece = self.getCell(newPosition[0] + direction, newPosition[1]).piece
-        en_passanted_piece_square = self.translate_position_to_binary(newPosition[0] + direction, newPosition[1])
-        self.En_Passant(piece, newPosition)
-        self.update_AttackMap_of_AffectedPieces_En_Passant(piece, original_bit_position, new_bit_position, en_passanted_piece_square)
-        en_passant_flag = True
-        self.pieces.add(piece)
-      else:
-        self.simulateMove(piece, newPosition)
-        self.update_AttackMap_of_AffectedPieces(piece, original_bit_position, new_bit_position)
-        self.pieces.add(piece)
-    else:
-      self.simulateMove(piece, newPosition)
-      self.update_AttackMap_of_AffectedPieces(piece, original_bit_position, new_bit_position)
-      self.pieces.add(piece)
-      
-    if (self.isKingInCheck(piece.color)):
-      checkFlag = True
-    
-    #Reversing the simulation
-    if isinstance(piece, Pawn):
-      if en_passant_flag:
-        self.simulateMove(piece, original_position)
-        
-        if captured_piece: #If the simulated move resulted in a capture, it is reversed
-          direction = 1 if piece.color==self.PlayerColor else -1
-          en_passanted_piece_square = self.translate_position_to_binary(newPosition[0] + direction, newPosition[1])
-          self.getCell(newPosition[0] + direction, newPosition[1]).piece = captured_piece
-          captured_piece.position = (newPosition[0] + direction, newPosition[1])
-          self.pieces.add(captured_piece)
-          
-        self.update_AttackMap_of_AffectedPieces_En_Passant(piece, original_bit_position, new_bit_position, en_passanted_piece_square)
-      else:
-        self.simulateMove(piece, original_position)   
-        piece.position = original_position 
-        piece.bitPosition = original_bit_position
-        piece.hasMoved = original_hasMoved
-        self.pieces.add(piece)
-        self.bit_boards = original_bitboards  
-        
-        if captured_piece: #If the simulated move resulted in a capture, it is reversed
-          self.getCell(newPosition[0], newPosition[1]).piece = captured_piece
-          captured_piece.position = newPosition
-          self.pieces.add(captured_piece)
-        
-        self.update_AttackMap_of_AffectedPieces(piece, new_bit_position, original_bit_position)
-    else:
-      self.simulateMove(piece, original_position)   
-      piece.position = original_position 
-      piece.bitPosition = original_bit_position
-      piece.hasMoved = original_hasMoved
-      self.pieces.add(piece)
-      self.bit_boards = original_bitboards   
-            
-      if captured_piece: #If the simulated move resulted in a capture, it is reversed
-        self.getCell(newPosition[0], newPosition[1]).piece = captured_piece
-        captured_piece.position = newPosition
-        self.pieces.add(captured_piece)
-      
-      self.update_AttackMap_of_AffectedPieces(piece, new_bit_position, original_bit_position)
-    return checkFlag
-  
-  
-  """  
-    
-      

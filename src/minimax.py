@@ -6,9 +6,8 @@ class MiniMax:
     self.depth = depth
     self.color = color
     self.board = board.copy()
-    self.board.print_bitboard(self.board.get_all_pieces_bitboard())
 
-  
+  @profile
   def minimax(self, depth, isMaximizingPlayer, alpha, beta):
     if depth == 0:
       return self.board.evaluationFunction()
@@ -62,8 +61,6 @@ class MiniMax:
     beta = float("inf")
 
     for piece in self.board.piecesByColor[self.color]:
-      if piece.position == (1, 3):
-        print(self.board.isPiecePinned(piece, False))
       for move in piece.getPossibleMoves(self.board):
         storedState = self.board.storeStateBeforeMove(piece, move)
         self.board.movePiece(piece, move)
