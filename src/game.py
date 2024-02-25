@@ -235,7 +235,7 @@ def snap_piece_to_board(window, piece, position, board):
   if piece:
     if is_valid_turn(piece, board):
       board.movePiece(piece, position)
-      if isinstance(piece, Pawn) and position[0]==0:
+      if (piece.piece_type == "Player_Pawn" or piece.piece_type == "Enemy_Pawn") and position[0]==0:
         promotion_choice = promotion_screen(window, piece)
         board.promote(piece, promotion_choice)
       board.increment_turn()

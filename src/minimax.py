@@ -18,10 +18,10 @@ class MiniMax:
         for move in piece.getPossibleMoves(self.board):
           storedState = self.board.storeStateBeforeMove(piece, move)
           self.board.movePiece(piece, move)
-          if isinstance(piece, Pawn) and move[0] == (0 if piece.color == self.board.PlayerColor else 7):
+          if (piece.piece_type == "Player_Pawn" or piece.piece_type == "Enemy_Pawn") and move[0] == (0 if piece.color == self.board.PlayerColor else 7):
+            self.board.promote(piece, "Queen")
             storedState[-2] = True
             storedState[-1] = piece
-            self.board.promote(piece, "Queen")
           self.board.increment_turn()
 
           eval = self.minimax(depth - 1, False, alpha, beta)
@@ -40,8 +40,10 @@ class MiniMax:
         for move in piece.getPossibleMoves(self.board):
           storedState = self.board.storeStateBeforeMove(piece, move)
           self.board.movePiece(piece, move)
-          if isinstance(piece, Pawn) and move[0] == (0 if piece.color == self.board.PlayerColor else 7):
-            self.board.promote(piece, "Queen")
+          if (piece.piece_type == "Player_Pawn" or piece.piece_type == "Enemy_Pawn") and move[0] == (0 if piece.color == self.board.PlayerColor else 7):
+            promoted_piece = self.board.promote(piece, "Queen")
+            storedState[-2] = True
+            storedState[-1] = promoted_piece            
           self.board.increment_turn()
 
           eval = self.minimax(depth - 1, True, alpha, beta)

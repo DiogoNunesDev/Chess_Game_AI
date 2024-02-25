@@ -519,44 +519,47 @@ class Board:
         
     self.update_AttackMap_of_AffectedPieces_En_Passant(original_bitPosition, next_bitPosition, en_passanted_piece_square)
           
-  def promote(self, piece, choice):
-    self.pieces.remove(piece)
-    self.piecesByColor[piece.color].remove(piece)
-    if piece is not None and (piece.piece_type == "Player_Pawn" or piece.piece_type == "Enemy_Pawn"):
-      row = piece.position[0]
-      col = piece.position[1]
-      bitPosition = piece.bitPosition
-      if choice == "Queen":
-        self.getCell(row, col).piece = None
-        piece = Queen(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
-        self.getCell(row, col).piece = piece
-        piece.bitPosition = bitPosition
-        self.updateBitBoards_Promotion(piece)
-        piece.getAttackedSquares(self)
-      elif choice == "Knight":
-        self.getCell(row, col).piece = None
-        piece = Knight(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
-        self.getCell(row, col).piece = piece
-        piece.bitPosition = bitPosition
-        self.updateBitBoards_Promotion(piece)
-      elif choice == "Rook":
-        self.getCell(row, col).piece = None
-        piece = Rook(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
-        self.getCell(row, col).piece = piece
-        piece.bitPosition = bitPosition
-        self.updateBitBoards_Promotion(piece)
-        piece.getAttackedSquares(self)
-      elif choice == "Bishop":
-        self.getCell(row, col).piece = None
-        piece = Bishop(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
-        self.getCell(row, col).piece = piece
-        piece.bitPosition = bitPosition
-        self.updateBitBoards_Promotion(piece)
-        piece.getAttackedSquares(self)
+  def promote(self, pawn, choice):
+    self.pieces.remove(pawn)
+    self.piecesByColor[pawn.color].remove(pawn)
+    row = piece.position[0]
+    col = piece.position[1]
+    bitPosition = pawn.bitPosition
+    if choice == "Queen":
+      self.getCell(row, col).piece = None
+      piece = Queen(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      self.getCell(row, col).piece = piece
+      piece.bitPosition = bitPosition
+      self.updateBitBoards_Promotion(piece)
+      piece.getAttackedSquares(self)
+      self.slidingPieces.add(piece)
+    elif choice == "Knight":
+      self.getCell(row, col).piece = None
+      piece = Knight(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      self.getCell(row, col).piece = piece
+      piece.bitPosition = bitPosition
+      self.updateBitBoards_Promotion(piece)
+    elif choice == "Rook":
+      self.getCell(row, col).piece = None
+      piece = Rook(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      self.getCell(row, col).piece = piece
+      piece.bitPosition = bitPosition
+      self.updateBitBoards_Promotion(piece)
+      piece.getAttackedSquares(self)
+      self.slidingPieces.add(piece)
+    elif choice == "Bishop":
+      self.getCell(row, col).piece = None
+      piece = Bishop(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      self.getCell(row, col).piece = piece
+      piece.bitPosition = bitPosition
+      self.updateBitBoards_Promotion(piece)
+      piece.getAttackedSquares(self)
+      self.slidingPieces.add(piece)
         
-      self.pieces.add(piece)
-      self.piecesByColor[piece.color].add(piece)
-
+    self.pieces.add(piece)
+    self.piecesByColor[piece.color].add(piece)
+    return piece
+    
   def checkFiftyMoveRule(self, piece, next_position):
     if (piece.piece_type == "Player_Pawn" or piece.piece_type == "Enemy_Pawn") or (self.getCell(next_position[0], next_position[1]).piece is not None and self.getCell(next_position[0], next_position[1]).piece.color != self.PlayerColor):
       self.fiftyMoveRule_checker = 0
@@ -802,22 +805,24 @@ class Board:
       self.kingPositions[piece.color] = original_position
      
   def unmakeMove(self, piece, newPosition, storedState):
-    original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position, promotion_flag, promoted_pawn = storedState
+    original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position, promotion_flag, promoted_piece = storedState
     old_position = self.translate_position_to_binary(piece.position[0], piece.position[1])
     row = 0 if piece.color != self.PlayerColor else 7
+    
+    self.bit_boards = original_bitboards       
     
     if piece.piece_type == "King" and (piece.position == (row, 2) or piece.position == (row, 6)) and piece.castled == True:
       self.reverseCastle(piece, original_bit_position)
     
-    elif promotion_flag and promoted_pawn is not None:
-      self.pieces.remove(piece)
-      self.slidingPieces.remove(piece)
+    elif promotion_flag and promoted_piece is not None:
+      self.pieces.remove(promoted_piece)
+      self.slidingPieces.remove(promoted_piece)
       
-      self.getCell(piece.position[0], piece.position[1]).piece = None
-      self.getCell(original_position[0], original_position[1]).piece = promoted_pawn
-      promoted_pawn.position = original_position
-      promoted_pawn.bitPosition = original_bit_position
-      self.pieces.add(promoted_pawn)
+      self.getCell(promoted_piece.position[0], promoted_piece.position[1]).piece = None
+      self.getCell(original_position[0], original_position[1]).piece = piece
+      piece.position = original_position
+      piece.bitPosition = original_bit_position
+      self.pieces.add(piece)
       
       if captured_piece: #If the simulated move resulted in a capture, it is reversed
         if captured_piece.piece_type == "Bishop" or captured_piece.piece_type == "Rook" or captured_piece.piece_type == "Queen":
@@ -853,7 +858,6 @@ class Board:
 
       self.update_AttackMap_of_AffectedPieces(old_position, original_bit_position)
       
-    self.bit_boards = original_bitboards   
     self.turn_counter -= 1
   
   
