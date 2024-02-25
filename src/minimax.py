@@ -19,6 +19,8 @@ class MiniMax:
           storedState = self.board.storeStateBeforeMove(piece, move)
           self.board.movePiece(piece, move)
           if isinstance(piece, Pawn) and move[0] == (0 if piece.color == self.board.PlayerColor else 7):
+            storedState[-2] = True
+            storedState[-1] = piece
             self.board.promote(piece, "Queen")
           self.board.increment_turn()
 
