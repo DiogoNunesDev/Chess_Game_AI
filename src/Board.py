@@ -236,9 +236,8 @@ class Board:
       if (original_position & piece.attackedSquares) > 0 or (new_position & piece.attackedSquares) > 0:
         piece.getAttackedSquares(self)
         
-  def update_AttackMap_of_AffectedPieces_En_Passant(self, moved_piece, original_position, new_position, en_passanted_piece_square): #to be updated
-    moved_piece.getAttackedSquares(self)
-    for piece in self.pieces:
+  def update_AttackMap_of_AffectedPieces_En_Passant(self, original_position, new_position, en_passanted_piece_square):
+    for piece in self.slidingPieces:
       if (original_position & piece.attackedSquares) > 0 or (new_position & piece.attackedSquares) > 0 or (en_passanted_piece_square & piece.attackedSquares) > 0:
         piece.getAttackedSquares(self)
   
@@ -333,7 +332,6 @@ class Board:
     self.bit_boards[captured_piece_bitboard] = self.bit_boards[captured_piece_bitboard] & (position ^ 0xFFFFFFFFFFFFFFFF)
   
   def updateBitBoards_Promotion(self, piece):
-    #Since now the piece is not a pawn...
     self.bit_boards[piece.board] |= piece.bitPosition 
     old_board = "player_pawns" if piece.color == self.PlayerColor else "enemy_pawns"
     self.bit_boards[old_board] = (self.bit_boards[old_board] & (piece.bitPosition ^ 0xFFFFFFFFFFFFFFFF))
@@ -390,7 +388,7 @@ class Board:
       next_bit_position = self.translate_position_to_binary(next_position[0], next_position[1])
     
       self.update_AttackMap_of_AffectedPieces(original_bit_position, next_bit_position)
-      
+    
     if self.isKingInCheck(not piece.color):
       self.kingInCheck[not piece.color] = True   
     
@@ -457,7 +455,7 @@ class Board:
   def isKingInCheck(self, color):
     king_pos = self.translate_position_to_binary(self.kingPositions[color][0], self.kingPositions[color][1])
     for piece in self.piecesByColor[not color]:
-      if piece.piece_type == "King" or piece.piece_type == "Knight" or piece.piece_type == "Pawn":
+      if piece.piece_type == "King" or piece.piece_type == "Knight" or piece.piece_type == "Player_Pawn" or piece.piece_type == "Enemy_Pawn":
         if (self.getCell(piece.position[0], piece.position[1]).precomputed_AttackMap[piece.piece_type] & king_pos) > 0:
           return True
         
@@ -519,7 +517,7 @@ class Board:
     self.piecesByColor[captured_piece.color].remove(captured_piece)
     self.getCell((next_position[0] + direction), next_position[1]).piece = None
         
-    self.update_AttackMap_of_AffectedPieces_En_Passant(piece, original_bitPosition, next_bitPosition, en_passanted_piece_square)
+    self.update_AttackMap_of_AffectedPieces_En_Passant(original_bitPosition, next_bitPosition, en_passanted_piece_square)
           
   def promote(self, piece, choice):
     self.pieces.remove(piece)
@@ -769,7 +767,9 @@ class Board:
         direction = 1 if piece.color==self.PlayerColor else -1
         captured_piece = self.getCell(newPosition[0] + direction, newPosition[1]).piece
     new_bit_position = self.translate_position_to_binary(newPosition[0], newPosition[1])
-    return (original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position)
+    promotion_flag=False
+    promoted_pawn = None
+    return (original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position, promotion_flag, promoted_pawn)
    
   def reverseCastle(self, piece, original_bit_position):
     piece.position = (piece.position[0], 4)
@@ -802,13 +802,33 @@ class Board:
       self.kingPositions[piece.color] = original_position
      
   def unmakeMove(self, piece, newPosition, storedState):
-    original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position = storedState
+    original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position, promotion_flag, promoted_pawn = storedState
     old_position = self.translate_position_to_binary(piece.position[0], piece.position[1])
     row = 0 if piece.color != self.PlayerColor else 7
     
     if piece.piece_type == "King" and (piece.position == (row, 2) or piece.position == (row, 6)) and piece.castled == True:
       self.reverseCastle(piece, original_bit_position)
     
+    elif promotion_flag and promoted_pawn is not None:
+      self.pieces.remove(piece)
+      self.slidingPieces.remove(piece)
+      
+      self.getCell(piece.position[0], piece.position[1]).piece = None
+      self.getCell(original_position[0], original_position[1]).piece = promoted_pawn
+      promoted_pawn.position = original_position
+      promoted_pawn.bitPosition = original_bit_position
+      self.pieces.add(promoted_pawn)
+      
+      if captured_piece: #If the simulated move resulted in a capture, it is reversed
+        if captured_piece.piece_type == "Bishop" or captured_piece.piece_type == "Rook" or captured_piece.piece_type == "Queen":
+            self.slidingPieces.add(captured_piece)
+        self.getCell(newPosition[0], newPosition[1]).piece = captured_piece
+        captured_piece.position = newPosition
+        self.pieces.add(captured_piece)
+        self.piecesByColor[captured_piece.color].add(captured_piece)
+      
+      self.update_AttackMap_of_AffectedPieces(old_position, original_bit_position)
+      
     elif en_passant_flag:
       self.reverseMove(piece, original_position, original_bit_position, captured_piece)
       en_passanted_piece_square = None
@@ -817,9 +837,9 @@ class Board:
       self.getCell(newPosition[0] + direction, newPosition[1]).piece = captured_piece
       self.pieces.add(captured_piece)
       self.piecesByColor[captured_piece.color].add(captured_piece)
-          
-      self.update_AttackMap_of_AffectedPieces_En_Passant(piece, original_bit_position, new_bit_position, en_passanted_piece_square)
       
+      self.update_AttackMap_of_AffectedPieces_En_Passant(original_bit_position, new_bit_position, en_passanted_piece_square)
+
     else:
       self.reverseMove(piece, original_position, original_bit_position, captured_piece)   
       piece.hasMoved = original_hasMoved

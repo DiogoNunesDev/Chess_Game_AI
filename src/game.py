@@ -28,13 +28,11 @@ def run_game():
   
   while(running):
     pygame.display.update()
-
+    """
     if PlayerColor and board.turn_counter % 2 == 0 and not board.endGame:
       #print("ok")
-      #time.sleep(0.25)
       #make_random_move(board, PlayerColor)
       
-      #position, move = minimax(board, 2, not PlayerColor)
       position, move = minimax(board, 3, not PlayerColor)
 
       piece = board.getCell(position[0], position[1]).piece
@@ -62,10 +60,11 @@ def run_game():
         window.blit(text, text_rect)
         pygame.display.update()
         #break
+    
     elif PlayerColor and board.turn_counter % 2 != 0: 
-      """
+      
       make_random_move(board, not PlayerColor)
-      board.updateBoardStateHistory()
+      #board.updateBoardStateHistory()
       update_game_state(window, board)
       pygame.display.update()
       #Check for End Game after each move
@@ -81,10 +80,11 @@ def run_game():
         window.blit(surface, (0, 0))
         window.blit(text, text_rect)
         pygame.display.update()
-    """
+      """
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
           running = False 
+        #"""
         elif event.type == pygame.MOUSEBUTTONDOWN and not endGame:
             if not selected_piece:            # Select the piece
               selected_piece = get_selected_piece(event.pos, board)
@@ -94,7 +94,7 @@ def run_game():
                   update_game_state(window, board)
                   draw_possible_moves(window, possible_moves, board)
                   if selected_piece.piece_type == "King":
-                    print(selected_piece.castled)
+                    board.print_bitboard(board.getCell(selected_piece.position[0] -1, selected_piece.position[1]).precomputed_AttackMap['Enemy_Pawn'])
 
             else:
               

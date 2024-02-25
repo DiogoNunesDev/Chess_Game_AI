@@ -2,8 +2,8 @@ class Piece:
   _id_counter = 0  # Class-level attribute for unique ID generation
 
   def __init__(self, position, color, PlayerColor):
-    self.id = Piece._id_counter  # Assign a unique ID to each piece instance
-    Piece._id_counter += 1       # Increment ID counter for next piece
+    self.id = Piece._id_counter  # Assigns a unique ID to each piece instance
+    Piece._id_counter += 1       # Increments ID counter for next piece so they get compared by id and not 'specs'
 
     self.color = color
     self.position = position

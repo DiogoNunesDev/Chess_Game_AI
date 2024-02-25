@@ -59,7 +59,6 @@ class Cell:
     """
     self.precomputed_AttackMap['Player_Pawn'] = 0
     self.precomputed_AttackMap['Player_Pawn'] |= ((self.bitPosition << 7) & not_h_file) #Attack left
-      
     self.precomputed_AttackMap['Player_Pawn'] |= ((self.bitPosition << 9) & not_a_file) #Attack right
        
     """
@@ -67,7 +66,6 @@ class Cell:
     """
     self.precomputed_AttackMap['Enemy_Pawn'] = 0
     self.precomputed_AttackMap['Enemy_Pawn'] |= ((self.bitPosition >> 7) & not_a_file) #Attack right
-
     self.precomputed_AttackMap['Enemy_Pawn'] |= ((self.bitPosition >> 9) & not_h_file) #Attack left
     
     
