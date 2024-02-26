@@ -8,9 +8,11 @@ class Bishop(Piece):
     if (self.color):
       self.path = r"images\white-bishop.png"
       self.value = 310
+      self.name = "B"
     else:
       self.path = r"images\black-bishop.png"
       self.value = -310
+      self.name = "b"
     self.bitPosition = None
     self.board = "player_bishops" if self.color == self.PlayerColor else "enemy_bishops"
     self.piece_type = "Bishop"

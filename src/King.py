@@ -8,9 +8,11 @@ class King(Piece):
     if (self.color):
       self.path = r"images\white-king.png"
       self.value = float('inf')
+      self.name = "K"
     else:
       self.path = r"images\black-king.png"
       self.value = float('-inf')
+      self.name = "k"
       
     self.isInCheck = False
     self.castled = False

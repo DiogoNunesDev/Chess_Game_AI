@@ -7,9 +7,11 @@ class Knight(Piece):
     if (self.color):
       self.path = r"images\white-knight.png"
       self.value = 300
+      self.name = "N"
     else:
       self.path = r"images\black-knight.png"
       self.value = -300
+      self.name = "n"
     self.bitPosition = None
     self.board = "player_knights" if self.color == self.PlayerColor else "enemy_knights"
     self.piece_type = "Knight"

@@ -7,10 +7,12 @@ class Pawn(Piece):
     if (self.color):
       self.path = r"images\white-pawn.png"
       self.value = 100
+      self.name = "P"
       
     else:
       self.path = r"images\black-pawn.png"
       self.value = -100
+      self.name = "p"
     self.en_passant = None
     self.bitPosition = None
     self.starting_bitPosition = None
@@ -107,9 +109,10 @@ class Pawn(Piece):
     for col_offset in [-1, 1]:
       diagonal_position = (row, self.position[1] + col_offset)
       if 0 <= diagonal_position[1] <= 7  and self.checkEn_Passant(board, diagonal_position):
+        board.en_passant_fen_square = board.convert_square_to_fen_notation(diagonal_position)
         diagonal_position = board.translate_position_to_binary(diagonal_position[0], diagonal_position[1])
         moves |= diagonal_position & 0xFFFFFFFFFFFFFFFF
-    
+
     self.moves = moves
     return self.moves
   
