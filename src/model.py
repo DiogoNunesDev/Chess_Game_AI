@@ -1,14 +1,11 @@
 import random
-import time
 from Pawn import Pawn
 #from MCTS import MCTS, Node
 from minimax import MiniMax
 
 
 def make_random_move(board, PlayerColor):
-    # Collect all pieces that have legal moves and color different to the player
-    #pieces = list(board.getEnemyPieces()) #Used when player is Human
-    pieces = list(board.piecesByColor[not PlayerColor])   # Used for random play on both sides
+    pieces = list(board.piecesByColor[not PlayerColor])   
 
     if not pieces:
         return
