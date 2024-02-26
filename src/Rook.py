@@ -7,9 +7,11 @@ class Rook(Piece):
     if (self.color):
       self.path = r"images\white-rook.png"
       self.value = 500
+      self.name = "R"
     else:
       self.path = r"images\black-rook.png"
       self.value = -500
+      self.name = "r"
     self.bitPosition = None
     self.board = "player_rooks" if self.color == self.PlayerColor else "enemy_rooks"
     self.piece_type = "Rook"

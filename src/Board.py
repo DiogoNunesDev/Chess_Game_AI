@@ -91,6 +91,7 @@ class Board:
     self.slidingPieces = set()
     self.piecesByColor = {True: set(), False: set()}
     self.bit_to_pos = [(7 - (i // 8), i % 8) for i in range(64)]
+    self.en_passant_fen_square = None
     
   def print_bitboard(self, binary_number):
     # To ensure the binary number has 64 bits
@@ -344,7 +345,7 @@ class Board:
     
     return False
   
-  @profile
+  
   def movePiece(self, piece, next_position):
     if (piece.piece_type == "King" and piece.checkCastle(self, next_position)):
       self.castle(piece, next_position)
@@ -416,7 +417,7 @@ class Board:
     if piece.piece_type == "King":
       self.kingPositions[piece.color] = next_position
   
-  @profile
+  
   def checkMove(self, piece, newPosition):
     checkFlag = False
     original_position = piece.position
@@ -451,7 +452,7 @@ class Board:
 
     return checkFlag
 
-  @profile
+  
   def isKingInCheck(self, color):
     king_pos = self.translate_position_to_binary(self.kingPositions[color][0], self.kingPositions[color][1])
     for piece in self.piecesByColor[not color]:
@@ -522,12 +523,13 @@ class Board:
   def promote(self, pawn, choice):
     self.pieces.remove(pawn)
     self.piecesByColor[pawn.color].remove(pawn)
-    row = piece.position[0]
-    col = piece.position[1]
+    row = pawn.position[0]
+    col = pawn.position[1]
     bitPosition = pawn.bitPosition
+    piece = None
     if choice == "Queen":
       self.getCell(row, col).piece = None
-      piece = Queen(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      piece = Queen(position=pawn.position, color=pawn.color, PlayerColor=self.PlayerColor)
       self.getCell(row, col).piece = piece
       piece.bitPosition = bitPosition
       self.updateBitBoards_Promotion(piece)
@@ -535,13 +537,13 @@ class Board:
       self.slidingPieces.add(piece)
     elif choice == "Knight":
       self.getCell(row, col).piece = None
-      piece = Knight(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      piece = Knight(position=pawn.position, color=pawn.color, PlayerColor=self.PlayerColor)
       self.getCell(row, col).piece = piece
       piece.bitPosition = bitPosition
       self.updateBitBoards_Promotion(piece)
     elif choice == "Rook":
       self.getCell(row, col).piece = None
-      piece = Rook(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      piece = Rook(position=pawn.position, color=pawn.color, PlayerColor=self.PlayerColor)
       self.getCell(row, col).piece = piece
       piece.bitPosition = bitPosition
       self.updateBitBoards_Promotion(piece)
@@ -549,7 +551,7 @@ class Board:
       self.slidingPieces.add(piece)
     elif choice == "Bishop":
       self.getCell(row, col).piece = None
-      piece = Bishop(position=piece.position, color=piece.color, PlayerColor=self.PlayerColor)
+      piece = Bishop(position=pawn.position, color=pawn.color, PlayerColor=self.PlayerColor)
       self.getCell(row, col).piece = piece
       piece.bitPosition = bitPosition
       self.updateBitBoards_Promotion(piece)
@@ -784,8 +786,7 @@ class Board:
     direction = -1 if piece.position[1] < 4 else 1
     start_rook_col = 0 if piece.position[1] < 4 else 7
     rook = self.getCell(piece.position[0], 4 + direction).piece
-    print(self)
-    print((piece.position[0], 4 + direction))
+
     rook.hasMoved = False
     rook.position = (piece.position[0], start_rook_col)
     rook.bitPosition = self.translate_position_to_binary(rook.position[0], rook.position[1])
@@ -860,5 +861,83 @@ class Board:
       
     self.turn_counter -= 1
   
+  def visualization(self):
+    board_str = ""
+    for row in range(8):
+        row_str = " | ".join(self.cells[row][col].piece.name if self.cells[row][col].piece else "." for col in range(8))
+        board_str += row_str + "\n" + ("-" * 50) + "\n"
+    return board_str
   
+  def convert_square_to_fen_notation(self, square):
+    row, col = square
+
+    
+    if self.PlayerColor:# If the player is playing as White
+      fen_row = str(8 - row)  
+    
+    else:# If the player is playing as Black
+      fen_row = str(1 + row)
+
+    # Convert the column number to a letter (a-h)
+    columns = "abcdefgh"
+    fen_col = columns[col]
+
+    return fen_col + fen_row
+  
+  def convert_state_to_fenString(self):
+    fen_rows = []
+    start, end, step = (0, 8, 1) if self.PlayerColor else (7, -1, -1)
+    
+    for row in range(start, end, step):
+      empty_count = 0
+      fen_row = ''
+      for col in range(8):
+        piece = self.cells[row][col].piece
+        if piece is not None:
+          if empty_count > 0:
+            fen_row += str(empty_count)
+            empty_count = 0
+          fen_row += piece.name
+        else:
+          empty_count += 1
+
+      if empty_count > 0:
+        fen_row += str(empty_count)
+
+      fen_rows.append(fen_row)
+
+    fen_position = '/'.join(fen_rows)
+
+    active_color = 'w' if self.turn_counter % 2 != 0 else 'b' 
+    
+    white_king = self.getCell(self.kingPositions[True][0], self.kingPositions[True][1]).piece
+    black_king =  self.getCell(self.kingPositions[False][0], self.kingPositions[False][1]).piece
+    castling_availability = '' if not white_king.castled and not black_king.castled else '-'
+    
+    if not white_king.castled:
+      if not self.getCell(white_king.position[0], 7).piece.hasMoved:
+        castling_availability+='K'
+      if not self.getCell(white_king.position[0], 0).piece.hasMoved:
+        castling_availability+='Q'
+    
+    if not black_king.castled:
+      if not self.getCell(black_king.position[0], 7).piece.hasMoved:
+        castling_availability+='k'
+      if not self.getCell(black_king.position[0], 0).piece.hasMoved:
+        castling_availability+='q'
+    
+
+    en_passant_target = '-'  if self.en_passant_fen_square is None else self.en_passant_fen_square
+    halfmove_clock = str(self.fiftyMoveRule_checker)
+    fullmove_number = str((self.turn_counter + 1) // 2)  # Fullmove number increments after Black's turn
+
+    fen_string = f"{fen_position} {active_color} {castling_availability} {en_passant_target} {halfmove_clock} {fullmove_number}"
+    return fen_string
+
+
+
+    #king_color = True if self.turn_counter % 2 != 0 else False
+    #castling_availability = self.getCell(self.kingPositions[king_color][0], self.kingPositions[king_color][1]).piece.castled
+    
+
   

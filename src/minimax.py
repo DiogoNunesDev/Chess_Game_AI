@@ -7,10 +7,10 @@ class MiniMax:
     self.color = color
     self.board = board.copy()
 
-  @profile
+  
   def minimax(self, depth, isMaximizingPlayer, alpha, beta):
     if depth == 0:
-      return self.board.evaluationFunction()
+            return self.board.evaluationFunction()
 
     if isMaximizingPlayer:
       maxEvaluation = float("-inf")
@@ -23,7 +23,7 @@ class MiniMax:
             storedState[-2] = True
             storedState[-1] = piece
           self.board.increment_turn()
-
+          
           eval = self.minimax(depth - 1, False, alpha, beta)
           
           self.board.unmakeMove(piece, move, storedState)
@@ -45,7 +45,7 @@ class MiniMax:
             storedState[-2] = True
             storedState[-1] = promoted_piece            
           self.board.increment_turn()
-
+          
           eval = self.minimax(depth - 1, True, alpha, beta)
           
           self.board.unmakeMove(piece, move, storedState)
@@ -71,7 +71,7 @@ class MiniMax:
         if isinstance(piece, Pawn) and move[0] == (0 if piece.color == self.board.PlayerColor else 7):
           self.board.promote(piece, "Queen")
         self.board.increment_turn()
-
+        
         value = self.minimax(self.depth - 1, not self.color, alpha, beta)
 
         self.board.unmakeMove(piece, move, storedState)

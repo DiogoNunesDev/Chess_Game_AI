@@ -1,9 +1,5 @@
-import math
-import time
 from Board import Board
 from King import King
-from Pawn import Pawn
-from Rook import Rook
 from model import make_move, make_random_move, minimax
 import pygame
 
@@ -33,7 +29,7 @@ def run_game():
       #print("ok")
       #make_random_move(board, PlayerColor)
       
-      position, move = minimax(board, 3, not PlayerColor)
+      position, move = minimax(board, 4, not PlayerColor)
 
       piece = board.getCell(position[0], position[1]).piece
       board.checkFiftyMoveRule(piece, move)
@@ -93,8 +89,7 @@ def run_game():
                   possible_moves = selected_piece.getPossibleMoves(board)
                   update_game_state(window, board)
                   draw_possible_moves(window, possible_moves, board)
-                  if selected_piece.piece_type == "King":
-                    board.print_bitboard(board.getCell(selected_piece.position[0] -1, selected_piece.position[1]).precomputed_AttackMap['Enemy_Pawn'])
+                  print(board.convert_state_to_fenString())
 
             else:
               

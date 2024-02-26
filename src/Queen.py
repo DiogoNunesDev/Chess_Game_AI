@@ -7,10 +7,12 @@ class Queen(Piece):
     if (self.color):
       self.path = r"images\white-queen.png"
       self.value = 900
+      self.name = "Q"
       
     else:
       self.path = r"images\black-queen.png"
       self.value = -900
+      self.name = "q"
     self.bitPosition = None
     self.board = "player_queen" if self.color == self.PlayerColor else "enemy_queen"
     self.piece_type = "Queen"
