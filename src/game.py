@@ -1,5 +1,6 @@
 from Board import Board
 from King import King
+from Pawn import Pawn
 from model import make_move, make_random_move, minimax
 import pygame
 
@@ -24,10 +25,8 @@ def run_game():
   
   while(running):
     pygame.display.update()
-    """
+    
     if PlayerColor and board.turn_counter % 2 == 0 and not board.endGame:
-      #print("ok")
-      #make_random_move(board, PlayerColor)
       
       position, move = minimax(board, 4, not PlayerColor)
 
@@ -58,26 +57,8 @@ def run_game():
         #break
     
     elif PlayerColor and board.turn_counter % 2 != 0: 
-      
-      make_random_move(board, not PlayerColor)
-      #board.updateBoardStateHistory()
-      update_game_state(window, board)
-      pygame.display.update()
-      #Check for End Game after each move
-      gameResult = board.checkEndGame()
-      if gameResult == 0:
-        surface, text, text_rect = board.createEndGameScreen(result= "DRAW!")     
-      elif gameResult == 1:
-        surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! AI Bot has Won!")
-      elif gameResult == -1:
-        surface, text, text_rect = board.createEndGameScreen(result= "CHECKMATE! Player has Won!")  
-          
-      if surface is not None and text is not None:
-        window.blit(surface, (0, 0))
-        window.blit(text, text_rect)
-        pygame.display.update()
-      """
-    for event in pygame.event.get():
+
+      for event in pygame.event.get():
         if event.type == pygame.QUIT:
           running = False 
         #"""
@@ -89,7 +70,6 @@ def run_game():
                   possible_moves = selected_piece.getPossibleMoves(board)
                   update_game_state(window, board)
                   draw_possible_moves(window, possible_moves, board)
-                  print(board.convert_state_to_fenString())
 
             else:
               

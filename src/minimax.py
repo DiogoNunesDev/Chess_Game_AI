@@ -1,16 +1,16 @@
 from Pawn import Pawn
 
-
 class MiniMax:
   def __init__(self, board, depth, color):
     self.depth = depth
     self.color = color
     self.board = board.copy()
-
   
+
+  @profile
   def minimax(self, depth, isMaximizingPlayer, alpha, beta):
     if depth == 0:
-            return self.board.evaluationFunction()
+      return self.board.evaluationFunction()
 
     if isMaximizingPlayer:
       maxEvaluation = float("-inf")

@@ -915,15 +915,15 @@ class Board:
     castling_availability = '' if not white_king.castled and not black_king.castled else '-'
     
     if not white_king.castled:
-      if not self.getCell(white_king.position[0], 7).piece.hasMoved:
+      if self.getCell(white_king.position[0], 7).piece is not None and not self.getCell(white_king.position[0], 7).piece.hasMoved:
         castling_availability+='K'
-      if not self.getCell(white_king.position[0], 0).piece.hasMoved:
+      if self.getCell(white_king.position[0], 0).piece is not None and not self.getCell(white_king.position[0], 0).piece.hasMoved:
         castling_availability+='Q'
     
     if not black_king.castled:
-      if not self.getCell(black_king.position[0], 7).piece.hasMoved:
+      if self.getCell(black_king.position[0], 7).piece is not None and not self.getCell(black_king.position[0], 7).piece.hasMoved:
         castling_availability+='k'
-      if not self.getCell(black_king.position[0], 0).piece.hasMoved:
+      if self.getCell(black_king.position[0], 0).piece is not None and not self.getCell(black_king.position[0], 0).piece.hasMoved:
         castling_availability+='q'
     
 
