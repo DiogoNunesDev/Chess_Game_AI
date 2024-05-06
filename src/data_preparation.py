@@ -4,13 +4,18 @@ from stockfish import Stockfish
 from multiprocessing import Pool
 import csv
 
-def evaluate_board(fen):
+def init_stockfish():
+  global stockfish
   stockfish = Stockfish('executables/stockfish-windows-x86-64-avx2.exe')
+
+def evaluate_board(fen):
   stockfish.set_fen_position(fen)
-  return fen, stockfish.get_evaluation()['value']
+  evaluation = stockfish.get_evaluation()['value']
+  return fen, evaluation
 
 def process_game(file_path):
   with open(file_path) as pgn:
+    print(f"Processing {file_path}")
     fens = []
     while True:
       game = chess.pgn.read_game(pgn)
@@ -22,30 +27,26 @@ def process_game(file_path):
         fens.append(board.fen())
     return fens
 
-def save_evaluations_to_file(evaluations, file_name='chess_evaluations.csv'):
+def write_evaluations_to_file(evaluations, file_name):
   with open(file_name, 'a', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
     for fen, evaluation in evaluations:
       writer.writerow([fen, str(evaluation)])
 
 def main():
-    
-  with open('chess_evaluations.csv', 'w', newline='', encoding='utf-8') as file:
+  file_paths = [os.path.join('data', file) for file in os.listdir('data')]
+  csv_file = 'chess_evaluations.csv'
+  # Clear or create the CSV file and write headers
+  with open(csv_file, 'w', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
     writer.writerow(['FEN', 'Evaluation'])
 
-  file_paths = [os.path.join('data', file) for file in os.listdir('data') if file == 'Carlsen.pgn']
-
-  # Extract FENs from games
-  all_fens = []
   for file_path in file_paths:
-    all_fens.extend(process_game(file_path))
-
-  # Use of multithreading for board state evaluation using stockfish
-  with Pool() as pool:
-    evaluations = pool.map(evaluate_board, all_fens)
-
-  save_evaluations_to_file(evaluations)
+    print(file_path)
+    fens = process_game(file_path)
+    with Pool(initializer=init_stockfish) as pool:
+      evaluations = pool.map(evaluate_board, fens)
+      write_evaluations_to_file(evaluations, csv_file)
 
 if __name__ == "__main__":
     main()

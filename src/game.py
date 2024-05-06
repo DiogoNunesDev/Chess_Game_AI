@@ -3,6 +3,7 @@ from King import King
 from Pawn import Pawn
 from model import make_move, make_random_move, minimax
 import pygame
+import tensorflow as tf
 
 
 def run_game():
@@ -20,6 +21,8 @@ def run_game():
   endGame = False
   selected_piece = None
   surface = None
+  tf.config.optimizer.set_jit(True)
+  model = tf.keras.models.load_model('..\Chess Game\\models\\FF_model_V3.h5')
   
   update_game_state(window, board)
   
@@ -28,7 +31,7 @@ def run_game():
     
     if PlayerColor and board.turn_counter % 2 == 0 and not board.endGame:
       
-      position, move = minimax(board, 4, not PlayerColor)
+      position, move = minimax(board, 3, not PlayerColor, model)
 
       piece = board.getCell(position[0], position[1]).piece
       board.checkFiftyMoveRule(piece, move)
@@ -57,12 +60,12 @@ def run_game():
         #break
     
     elif PlayerColor and board.turn_counter % 2 != 0: 
-
+    
       for event in pygame.event.get():
         if event.type == pygame.QUIT:
           running = False 
-        #"""
         elif event.type == pygame.MOUSEBUTTONDOWN and not endGame:
+            print(board.kingPositions[False])
             if not selected_piece:            # Select the piece
               selected_piece = get_selected_piece(event.pos, board)
               if selected_piece:

@@ -46,8 +46,8 @@ def make_move(board, PlayerColor):
     best_child = max(root.children, key= lambda child: child.visits)
   return best_child.piece_position, best_child.move
 
-def minimax(board, depth, color):
-  minimax = MiniMax(board, depth, color)
+def minimax(board, depth, color, evaluating_model):
+  minimax = MiniMax(board, depth, color, evaluating_model)
   return minimax.getBestMove()
 
         

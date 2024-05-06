@@ -1,6 +1,5 @@
-from copy import deepcopy
 import math
-
+import numpy as np
 import pygame
 from Cell import Cell
 from Bishop import Bishop
@@ -668,17 +667,6 @@ class Board:
     value = self.piece_position_values[piece.board][piece.position[0] * 8 + piece.position[1]]
     return value * n
   
-  def evaluationFunction(self):
-    eval=0
-    for piece in self.pieces:
-      if not piece.piece_type == "King":
-        eval += piece.value
-      else:
-        if piece.castled == True:
-          eval += 1000
-      eval += self.getPositionValue(piece)
-    return eval
-
   def __str__(self):
     board_str = ""
     for row in range(8):
@@ -777,6 +765,7 @@ class Board:
     return (original_position, original_bit_position, original_bitboards, original_hasMoved, captured_piece, en_passant_flag, new_bit_position, promotion_flag, promoted_pawn)
    
   def reverseCastle(self, piece, original_bit_position):
+    print("Reversed Castle")
     piece.position = (piece.position[0], 4)
     piece.hasMoved = False
     piece.castled = False
@@ -912,6 +901,7 @@ class Board:
     
     white_king = self.getCell(self.kingPositions[True][0], self.kingPositions[True][1]).piece
     black_king =  self.getCell(self.kingPositions[False][0], self.kingPositions[False][1]).piece
+    print(black_king)
     castling_availability = '' if not white_king.castled and not black_king.castled else '-'
     
     if not white_king.castled:
@@ -939,5 +929,50 @@ class Board:
     #king_color = True if self.turn_counter % 2 != 0 else False
     #castling_availability = self.getCell(self.kingPositions[king_color][0], self.kingPositions[king_color][1]).piece.castled
     
+  def fen_to_binary_planes(self, fen_string):
+    # Map for piece type to index of binary plane
+    piece_to_index = {
+        'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5,
+        'p': 6, 'n': 7, 'b': 8, 'r': 9, 'q': 10, 'k': 11
+    }
 
+    board_tensor = np.zeros((8, 8, 12), dtype=np.float32)
+    
+    # Spliting the FEN string to get all of its 'components'
+    board_part, active_color, castling, en_passant, halfmove_clock, fullmove_number = fen_string.split(' ')
+    
+    # Replace digits in FEN with corresponding number of '.'
+    for digit in '12345678':
+        board_part = board_part.replace(digit, '.' * int(digit))
+    
+    # Removing '/' to create a single string representing the board
+    board_part = board_part.replace('/', '')
+    
+    for i, char in enumerate(board_part):
+        if char in piece_to_index:
+            # Calculate the row and column from the index
+            row, col = divmod(i, 8)
+            # Set the value at the corresponding place in the tensor
+            board_tensor[row, col, piece_to_index[char]] = 1
+    
+    # Extra features: Active color and castling rights
+    active_color_plane = np.zeros((8, 8, 1), dtype=np.float32)
+    if active_color == 'w':
+        active_color_plane.fill(1)
+    
+    castling_planes = np.zeros((8, 8, 4), dtype=np.float32)
+    castling_rights = {'K': 0, 'Q': 1, 'k': 2, 'q': 3}
+    for char in castling:
+        if char in castling_rights:
+            castling_planes[:, :, castling_rights[char]].fill(1)
+    
+    # Stack all planes to form the final board representation tensor
+    board_tensor = np.concatenate((board_tensor, active_color_plane, castling_planes), axis=-1)
+    
+    return board_tensor
   
+  
+  def convert_fen_into_model_input(self, fen_string):
+    board_tensor = self.fen_to_binary_planes(fen_string)
+    board_tensor = np.stack([board_tensor])
+    return board_tensor

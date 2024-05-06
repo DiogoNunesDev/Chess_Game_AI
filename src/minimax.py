@@ -1,16 +1,38 @@
+import numpy as np
+from sklearn.discriminant_analysis import StandardScaler
 from Pawn import Pawn
+import tensorflow as tf
 
 class MiniMax:
-  def __init__(self, board, depth, color):
+  def __init__(self, board, depth, color, model):
     self.depth = depth
     self.color = color
     self.board = board.copy()
+    self.model = model
   
-
+  """
   @profile
+  def evaluate_board_state(self):
+    fen_state = self.board.convert_state_to_fenString()
+    board_tensor = self.board.convert_fen_into_model_input(fen_state)
+    return self.evaluating_model.predict(board_tensor)[0]
+  """
+  
+  @tf.function
+  def predict_model(self, input_data):
+      return self.model(input_data, training=False)
+
+  
+  def evaluate_board_state(self):
+      fen_state = self.board.convert_state_to_fenString()
+      board_tensor = self.board.convert_fen_into_model_input(fen_state)
+      # Using the compiled function for prediction
+      return self.predict_model(board_tensor)[0][0].numpy()
+  
+  
   def minimax(self, depth, isMaximizingPlayer, alpha, beta):
     if depth == 0:
-      return self.board.evaluationFunction()
+      return self.evaluate_board_state()
 
     if isMaximizingPlayer:
       maxEvaluation = float("-inf")
